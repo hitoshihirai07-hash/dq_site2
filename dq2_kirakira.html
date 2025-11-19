@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>DQ2 キラキラの場所一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="kira.css">
+</head>
+<body>
+  <h1>ドラゴンクエストII キラキラの場所一覧</h1>
+  <p><a href="index.html">&larr; トップページに戻る</a></p>
+  <p>ドラゴンクエストIIのフィールドや海辺・深海などにあるキラキラから入手できるアイテムの一覧です。番号や場所を見ながら中身を確認できます。</p>
+
+    <div class="kira-search">
+    <label>キーワード検索：
+      <input type="search" id="dq2-kirakira-search" data-filter-table="dq2-kirakira-table" placeholder="地名・アイテム名など">
+    </label>
+  </div>
+
+  <table id="dq2-kirakira-table" data-csv="dq2_kirakira.csv"></table>
+
+  <script src="kira_csv_loader.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+
+/* 右側ボスHP計算用サイドバー・ツール */
+
+.index-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+/* 左カラム（既存コンテンツ） */
+.index-main-left {
+  flex: 1 1 auto;
+}
+
+/* 右カラム（ツール） */
+.index-main-right {
+  flex: 0 0 320px;
+}
+
+/* スマホなど幅が狭いときは縦並びにする */
+@media (max-width: 900px) {
+  .index-main {
+    flex-direction: column;
+  }
+  .index-main-right {
+    flex-basis: auto;
+  }
+}
+
+/* ツール本体 */
+.boss-hp-tool {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #c4b89c;
+  font-size: 0.9rem;
+}
+
+.boss-hp-tool h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+  color: #1b7f5f;
+}
+
+.boss-hp-tool .field {
+  margin-bottom: 8px;
+}
+
+.boss-hp-tool label {
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.boss-hp-tool select,
+.boss-hp-tool input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+}
+
+.boss-hp-tool select:disabled {
+  background-color: #f3f0e5;
+}
+
+.boss-hp-tool .hp-display {
+  font-size: 0.9rem;
+  margin: 6px 0;
+}
+
+.boss-hp-tool .hp-display strong {
+  font-weight: 600;
+}
+
+.boss-hp-tool .buttons {
+  margin: 8px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.boss-hp-tool button {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.boss-hp-tool .alert {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #b71c1c;
+}
+
+.boss-hp-tool .helpers {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #c4b89c;
+  font-size: 0.8rem;
+}
+
+.boss-hp-tool .helpers-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.boss-hp-tool .helpers-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+
+/* サイト内検索ツール（右カラム） */
+.site-search-tool {
+  margin-top: 16px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #c4b89c;
+  font-size: 0.9rem;
+}
+
+.site-search-tool h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+  color: #1b4f7f;
+}
+
+.site-search-tool .field {
+  margin-bottom: 8px;
+}
+
+.site-search-tool input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+}
+
+.site-search-tool .search-results {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  border-top: 1px dashed #c4b89c;
+  padding-top: 6px;
+}
+
+.site-search-tool .search-result-item {
+  margin-bottom: 6px;
+}
+
+.site-search-tool .search-result-item a {
+  font-size: 0.9rem;
+  color: #1b4f7f;
+  text-decoration: none;
+}
+
+.site-search-tool .search-result-item a:hover {
+  text-decoration: underline;
+}
+
+.site-search-tool .search-result-meta {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.site-search-tool .search-empty,
+.site-search-tool .search-loading {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+
+/* トップページ左カラム内の2カラム構成（メタ情報 + ゲーム別ブロック） */
+.index-main-left-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.index-left-meta {
+  flex: 0 0 260px;
+}
+
+.index-left-games {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.index-game-block {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d0c6a8;
+  background: #fdfaf2;
+  font-size: 0.9rem;
+}
+
+.index-game-block h2 {
+  font-size: 1.0rem;
+  margin: 0 0 6px;
+}
+
+.index-game-block ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 900px) {
+  .index-main-left-inner {
+    flex-direction: column;
+  }
+  .index-left-meta {
+    flex-basis: auto;
+  }
+  .index-left-games {
+    grid-template-columns: 1fr;
+  }
+}

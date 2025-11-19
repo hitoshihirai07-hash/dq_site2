@@ -1,0 +1,109 @@
+
+/* 右側に置くボスHP計算ツール＋2カラムレイアウト */
+
+/* トップページ専用 2カラムレイアウト */
+main.two-column-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+
+/* スマホでは1カラムに戻す */
+@media (max-width: 800px) {
+  main.two-column-layout {
+    display: block;
+  }
+  main.two-column-layout .layout-side {
+    margin-top: 16px;
+  }
+}
+
+main.two-column-layout .layout-main {
+  min-width: 0;
+}
+
+main.two-column-layout .layout-side {
+  min-width: 0;
+}
+
+/* ボスHPツール本体 */
+.boss-hp-tool {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 0.9rem;
+}
+
+.boss-hp-tool h2 {
+  font-size: 1.0rem;
+  margin: 0 0 8px;
+}
+
+.boss-hp-tool .field {
+  margin-bottom: 8px;
+}
+
+.boss-hp-tool label {
+  font-size: 0.88rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.boss-hp-tool select,
+.boss-hp-tool input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+}
+
+.boss-hp-tool .hp-display {
+  font-size: 0.9rem;
+  margin: 6px 0;
+}
+
+.boss-hp-tool .hp-display strong {
+  font-weight: 600;
+}
+
+.boss-hp-tool .buttons {
+  margin: 8px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.boss-hp-tool button {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.boss-hp-tool .alert {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #b71c1c;
+}
+
+.boss-hp-tool .helpers {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.2);
+  font-size: 0.85rem;
+}
+
+.boss-hp-tool .helpers-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.boss-hp-tool .helpers-list {
+  margin: 0;
+  padding-left: 16px;
+}

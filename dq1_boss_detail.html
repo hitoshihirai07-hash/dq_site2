@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link rel="stylesheet" href="theme.css">
+  <meta charset="UTF-8">
+  <title>DQI ボス詳細</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+  /* サブ（同行モンスター）用テーブルの見た目調整 */
+  table.boss-sub-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 8px;
+  }
+  table.boss-sub-table th,
+  table.boss-sub-table td {
+    border: 1px solid #666; /* 線を濃くする */
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  table.boss-sub-table th {
+    background: #f0f0f0;   /* ヘッダーだけ薄いグレー */
+    text-align: center;
+  }
+  /* 数値っぽい列は右寄せにして見やすく */
+  table.boss-sub-table td:nth-child(2),
+  table.boss-sub-table td:nth-child(3),
+  table.boss-sub-table td:nth-child(4),
+  table.boss-sub-table td:nth-child(5) {
+    text-align: right;
+  }
+</style>
+
+</head>
+<body>
+  <h1>DQI ボス詳細</h1>
+
+  <div data-role="boss-detail"
+       data-csv="dq1_boss_multiunit.csv"></div>
+
+  <p><a href="dq1_boss_list.html">DQI ボス一覧に戻る</a></p>
+
+  <script src="boss_pages.js"></script>
+</body>
+</html>

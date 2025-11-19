@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>DQI 町・ダンジョン内アイテム一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="kira.css">
+</head>
+<body>
+  <h1>DQI 町・ダンジョン内アイテム一覧</h1>
+  <p><a href="index.html">&larr; トップページに戻る</a></p>
+  <p>
+    ドラゴンクエストIの町や城、ダンジョン内で入手できるアイテムの一覧です。
+    ツボ・タル・タンス・地面などから回収できるアイテムの場所確認用に使ってください。
+  </p>
+
+  <div class="filter-bar">
+    <label>キーワード検索：
+      <input type="search"
+             id="dq1-room-items-search"
+             data-filter-table="dq1-room-items-table"
+             placeholder="町名・ダンジョン名・アイテム名など">
+    </label>
+  </div>
+
+  <table id="dq1-room-items-table" data-csv="dq1_room_items.csv"></table>
+
+  <script src="room_items_loader.js"></script>
+<footer>
+<li><a href="index.html">トップへ戻る</a></li>  
+</body>
+</html>

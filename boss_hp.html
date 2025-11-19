@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ボスHP計算ツール | DQI・II HD-2D 情報メモ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- 共通テーマ＋ボスHP用スタイル -->
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="boss_hp_sidebar.css">
+</head>
+<body>
+  <h1>ボスHP計算ツール</h1>
+  <p><a href="index.html">&larr; トップページに戻る</a></p>
+  <p>DQI・DQII のボス戦中に HP の残りをメモしておくための簡易ツールです。</p>
+
+  <section class="boss-hp-tool"
+           data-dq1-csv="dq1_boss_multiunit.csv"
+           data-dq2-csv="dq2_boss_multiunit.csv">
+    <h2>ボスHP計算</h2>
+
+    <div class="field">
+      <label for="hp-game-select">作品：</label>
+      <select id="hp-game-select" data-role="game-select">
+        <option value="">-- 作品を選択 --</option>
+        <option value="DQ1">DQ1</option>
+        <option value="DQ2">DQ2</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="hp-boss-select">ボス：</label>
+      <select id="hp-boss-select" data-role="boss-select" disabled>
+        <option value="">-- ボスを選択 --</option>
+      </select>
+    </div>
+
+    <div class="hp-display">
+      最大HP：<strong data-role="max-hp">-</strong><br>
+      現在HP：<strong data-role="current-hp">-</strong>（<span data-role="percent">-</span>）
+    </div>
+
+    <div class="field">
+      <label for="hp-damage-input">ダメージ：</label>
+      <input id="hp-damage-input" type="number" min="0" step="1" data-role="damage-input">
+    </div>
+
+    <div class="buttons">
+      <button type="button" data-role="apply">ダメージを適用</button>
+      <button type="button" data-role="clear">クリア</button>
+    </div>
+
+    <div class="alert" data-role="alert"></div>
+
+    <div class="hp-log" data-role="hp-log">
+      <div class="hp-log-title">ダメージログ（このページを開いている間だけ）</div>
+      <ul class="hp-log-list" data-role="hp-log-list"></ul>
+    </div>
+
+    <div class="helpers" data-role="helpers" style="display:none;">
+      <div class="helpers-title">補助・取り巻き（計算には含まれません）</div>
+      <ul class="helpers-list" data-role="helpers-list"></ul>
+    </div>
+  </section>
+
+  <script src="boss_hp_sidebar.js"></script>
+</body>
+</html>

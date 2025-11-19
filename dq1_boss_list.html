@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link rel="stylesheet" href="theme.css">
+  <meta charset="UTF-8">
+  <title>DQI ボス一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h1>DQI ボス一覧</h1>
+  <p>DQIボスの名前・出現場所・HP・経験値・ゴールドを一覧表示します。ボス名をクリックすると詳細ページに移動します。</p>
+
+  <div data-role="boss-list"
+       data-csv="dq1_boss_multiunit.csv"
+       data-detail="dq1_boss_detail.html"></div>
+
+  <p><a href="index.html">トップに戻る</a></p>
+
+  <script src="boss_pages.js"></script>
+</body>
+</html>
