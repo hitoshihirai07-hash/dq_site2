@@ -1,327 +1,162 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <link rel="stylesheet" href="theme.css">
   <meta charset="UTF-8">
-  <title>DQI ボス詳細（HD-2D版）</title>
+  <title>DQI ボス詳細</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.6;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-  background-color: #f7f2e9; /* トップと同系統の薄いオレンジ系 */
-  color: #333;
-}
-a {
-  color: #1f5faa;
-}
-h1 {
-  font-size: 1.6rem;
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  border-bottom: 2px solid #d4b27c;
-  padding-bottom: 0.25rem;
-}
-h2 {
-  font-size: 1.2rem;
-  margin-top: 1.6rem;
-  margin-bottom: 0.4rem;
-  border-left: 4px solid #d4b27c;
-  padding-left: 0.5rem;
-}
-p.nav {
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-}
-p.nav a {
-  margin-right: 8px;
-}
-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.9rem;
-  margin-bottom: 12px;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 4px 6px;
-  text-align: left;
-}
-th {
-  background-color: #f2e7d7;
-}
-tbody tr:nth-child(odd) {
-  background-color: #fbf7f0;
-}
-tbody tr:nth-child(even) {
-  background-color: #fdfaf5;
-}
-.status-empty {
-  text-align: center;
-  padding: 8px 0;
-  color: #777;
-}
-.action-unit {
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  border: 1px solid #d4b27c;
-  background-color: #fdfaf5;
-}
-.action-unit h3 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-}
-.action-unit p {
-  margin: 0;
-  white-space: pre-wrap; /* 行動パターンを折り返して表示 */
-  font-size: 0.9rem;
-}
-@media (max-width: 768px) {
-  body {
-    padding: 12px;
+  /* サブ（同行モンスター）用テーブルの見た目調整 */
+  table.boss-sub-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 8px;
   }
-  h1 {
-    font-size: 1.3rem;
+  table.boss-sub-table th,
+  table.boss-sub-table td {
+    border: 1px solid #666; /* 線を濃くする */
+    padding: 4px 6px;
+    font-size: 12px;
   }
-}
+  table.boss-sub-table th {
+    background: #f0f0f0;   /* ヘッダーだけ薄いグレー */
+    text-align: center;
+  }
+  /* 数値っぽい列は右寄せにして見やすく */
+  table.boss-sub-table td:nth-child(2),
+  table.boss-sub-table td:nth-child(3),
+  table.boss-sub-table td:nth-child(4),
+  table.boss-sub-table td:nth-child(5) {
+    text-align: right;
+  }
+</style>
 
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-  <p class="nav">
-    <a href="./index.html">← トップに戻る</a>
-    <a href="./dq1_boss_list.html">← DQI ボス一覧に戻る</a>
-  </p>
-
   <h1>DQI ボス詳細</h1>
-  <p id="boss-title"></p>
 
-  <h2>ステータス</h2>
-  <table id="status-table">
-    <thead></thead>
-    <tbody>
-      <tr><td class="status-empty">読み込み中...</td></tr>
-    </tbody>
-  </table>
+  <div data-role="boss-detail"
+       data-csv="dq1_boss_multiunit.csv"></div>
 
-  <h2>行動パターン</h2>
-  <div id="action-container">
-    <p class="status-empty">読み込み中...</p>
-  </div>
+  
+<h2>ボス耐性</h2>
+<p>◎…特に有効 ／ ○…有効 ／ △…やや効きにくい ／ ×…ほとんど効かない</p>
+<table id="boss-resistance-table" class="boss-sub-table">
+  <thead></thead>
+  <tbody>
+    <tr><td>読み込み中...</td></tr>
+  </tbody>
+</table>
 
-  <h2>耐性まとめ</h2>
-  <p>◎…特に有効 ／ ○…有効 ／ △…やや効きにくい ／ ×…ほとんど効かない</p>
-  <table id="res-table">
-    <thead></thead>
-    <tbody>
-      <tr><td class="status-empty">読み込み中...</td></tr>
-    </tbody>
-  </table>
+<p><a href="dq1_boss_list.html">DQI ボス一覧に戻る</a></p>
 
+  <script src="boss_pages.js"></script>
   <script>
-    const CSV_MULTI = "dq1_boss_multiunit.csv";
-    const CSV_RESIST = "dq1_boss_resistance.csv";
+    (function() {
+      const CSV_PATH = "dq1_boss_resistance.csv";
 
-    function getBossNameFromQuery() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("boss") || "";
-    }
-
-    function setBossTitle(name) {
-      const el = document.getElementById("boss-title");
-      if (!name) {
-        el.textContent = "ボス戦名が指定されていません。";
-      } else {
-        el.textContent = "ボス戦名：" + name;
-      }
-    }
-
-    async function loadCsv(path) {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error("データの読み込みに失敗しました: " + path);
-      const text = await res.text();
-      const parsed = Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-      });
-      return parsed.data;
-    }
-
-    function isEmptyValue(v) {
-      if (v === null || v === undefined) return true;
-      const s = String(v).trim();
-      return s === "" || s.toLowerCase() === "nan";
-    }
-
-    function buildStatusTable(rows) {
-      const thead = document.querySelector("#status-table thead");
-      const tbody = document.querySelector("#status-table tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-
-      if (!rows.length) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 99;
-        td.className = "status-empty";
-        td.textContent = "このボスのステータス情報は登録されていません。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-        return;
+      function getBossNameFromQuery() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("boss") || "";
       }
 
-      const allCols = Object.keys(rows[0]);
-      const preferred = ["個体名", "体数", "HP", "攻撃力", "守備力", "経験値", "ゴールド", "出現場所"];
-      const candidate = preferred.filter(c => allCols.includes(c));
-      const visible = candidate.filter(col =>
-        rows.some(r => !isEmptyValue(r[col]))
-      );
+      function isEmptyValue(v) {
+        if (v === null || v === undefined) return true;
+        const s = String(v).trim();
+        return s === "" || s.toLowerCase() === "nan";
+      }
 
-      const trHead = document.createElement("tr");
-      visible.forEach(col => {
-        const th = document.createElement("th");
-        th.textContent = col;
-        trHead.appendChild(th);
-      });
-      thead.appendChild(trHead);
+      function parseCsv(text) {
+        const lines = text.replace(//g, "").split("
+").filter(l => l.trim() !== "");
+        if (!lines.length) return [];
+        const headers = lines[0].split(",");
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(",");
+          const row = {};
+          headers.forEach((h, idx) => {
+            row[h] = cols[idx] !== undefined ? cols[idx] : "";
+          });
+          rows.push(row);
+        }
+        return rows;
+      }
 
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        visible.forEach(col => {
+      async function loadResistance() {
+        const bossName = getBossNameFromQuery();
+        const table = document.getElementById("boss-resistance-table");
+        if (!table) return;
+        const thead = table.querySelector("thead");
+        const tbody = table.querySelector("tbody");
+        tbody.innerHTML = "";
+
+        if (!bossName) {
+          const tr = document.createElement("tr");
           const td = document.createElement("td");
-          const v = r[col];
-          td.textContent = isEmptyValue(v) ? "" : v;
+          td.colSpan = 99;
+          td.textContent = "ボス戦名が指定されていません。";
           tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    }
+          tbody.appendChild(tr);
+          return;
+        }
 
-    function buildActionBlocks(rows) {
-      const container = document.getElementById("action-container");
-      container.innerHTML = "";
+        try {
+          const res = await fetch(CSV_PATH);
+          if (!res.ok) throw new Error("読み込み失敗");
+          const text = await res.text();
+          const rows = parseCsv(text);
 
-      if (!rows.length) {
-        const p = document.createElement("p");
-        p.className = "status-empty";
-        p.textContent = "このボスの行動パターン情報は登録されていません。";
-        container.appendChild(p);
-        return;
-      }
-
-      const allCols = Object.keys(rows[0]);
-      const statusCols = ["ボス戦名", "個体名", "体数", "HP", "攻撃力", "守備力", "経験値", "ゴールド", "出現場所"];
-      const textCols = allCols.filter(c => !statusCols.includes(c));
-
-      rows.forEach(r => {
-        const unitDiv = document.createElement("div");
-        unitDiv.className = "action-unit";
-
-        const h = document.createElement("h3");
-        h.textContent = (r["個体名"] || "").trim() || "個体";
-        unitDiv.appendChild(h);
-
-        let lines = [];
-        textCols.forEach(col => {
-          const v = r[col];
-          if (!isEmptyValue(v)) {
-            if (col === "特徴メモ") {
-              lines.push("特徴：" + v);
-            } else if (col === "行動パターン") {
-              lines.push("行動パターン：" + v);
-            } else {
-              lines.push(col + "：" + v);
-            }
+          const target = rows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
+          if (!target.length) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 99;
+            td.textContent = "このボスの耐性データは登録されていません。";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
           }
-        });
 
-        const p = document.createElement("p");
-        p.textContent = lines.join("\n");
-        unitDiv.appendChild(p);
+          const allCols = Object.keys(target[0]);
+          const candidate = allCols.filter(c => c !== "ボス戦名");
+          const visible = candidate.filter(col =>
+            target.some(r => !isEmptyValue(r[col]))
+          );
 
-        container.appendChild(unitDiv);
-      });
-    }
+          const trHead = document.createElement("tr");
+          visible.forEach(col => {
+            const th = document.createElement("th");
+            th.textContent = col;
+            trHead.appendChild(th);
+          });
+          thead.innerHTML = "";
+          thead.appendChild(trHead);
 
-    function buildResTable(rows) {
-      const thead = document.querySelector("#res-table thead");
-      const tbody = document.querySelector("#res-table tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-
-      if (!rows.length) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 99;
-        td.className = "status-empty";
-        td.textContent = "このボスの耐性データは登録されていません。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-        return;
-      }
-
-      const allCols = Object.keys(rows[0]);
-      const candidate = allCols.filter(c => c !== "ボス戦名");
-      const visible = candidate.filter(col =>
-        rows.some(r => !isEmptyValue(r[col]))
-      );
-
-      const trHead = document.createElement("tr");
-      visible.forEach(col => {
-        const th = document.createElement("th");
-        th.textContent = col;
-        trHead.appendChild(th);
-      });
-      thead.appendChild(trHead);
-
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        visible.forEach(col => {
+          target.forEach(r => {
+            const tr = document.createElement("tr");
+            visible.forEach(col => {
+              const td = document.createElement("td");
+              const v = r[col];
+              td.textContent = isEmptyValue(v) ? "" : v;
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+        } catch (e) {
+          console.error(e);
+          const tr = document.createElement("tr");
           const td = document.createElement("td");
-          const v = r[col];
-          td.textContent = isEmptyValue(v) ? "" : v;
+          td.colSpan = 99;
+          td.textContent = "耐性データの読み込みに失敗しました。";
           tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function init() {
-      const bossName = getBossNameFromQuery();
-      setBossTitle(bossName);
-
-      if (!bossName) {
-        buildStatusTable([]);
-        buildActionBlocks([]);
-        buildResTable([]);
-        return;
+          tbody.appendChild(tr);
+        }
       }
 
-      try {
-        const multiRows = await loadCsv(CSV_MULTI);
-        const targetMulti = multiRows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
-        buildStatusTable(targetMulti);
-        buildActionBlocks(targetMulti);
-      } catch (e) {
-        console.error(e);
-        buildStatusTable([]);
-        buildActionBlocks([]);
-      }
-
-      try {
-        const resRows = await loadCsv(CSV_RESIST);
-        const targetRes = resRows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
-        buildResTable(targetRes);
-      } catch (e) {
-        console.error(e);
-        buildResTable([]);
-      }
-    }
-
-    init();
+      document.addEventListener("DOMContentLoaded", loadResistance);
+    })();
   </script>
 </body>
 </html>
