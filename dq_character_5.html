@@ -1,65 +1,255 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
   <title>DQ2サマルトリア王女 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
-  <link rel="stylesheet" href="theme.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    .character-block {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      margin: 1.5rem 0;
-    }
-    .character-block h1 {
-      margin-top: 0;
-    }
-    table.data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 0.5rem;
-    }
-    table.data-table th,
-    table.data-table td {
-      border: 1px solid #ccc;
-      padding: 0.25rem 0.5rem;
-    }
-    table.data-table th {
-      background: #f5f5f5;
-      text-align: left;
-    }
-  </style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #111;
+    color: #f5f5f5;
+  }
+  a {
+    color: #7fd1ff;
+  }
+  header, nav {
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #444;
+    padding-bottom: 0.3rem;
+  }
+  h2 {
+    font-size: 1.2rem;
+    margin-top: 1.8rem;
+    border-left: 4px solid #7fd1ff;
+    padding-left: 0.5rem;
+  }
+  p.note {
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid #444;
+    padding: 4px 6px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  th {
+    background: #222;
+  }
+  tbody tr:nth-child(odd) {
+    background: #181818;
+  }
+  tbody tr:nth-child(even) {
+    background: #151515;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+  .back-links {
+    margin-bottom: 8px;
+  }
+  .back-links a {
+    margin-right: 8px;
+  }
+</style>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-  <main class="page-main">
-    <p><a href="index.html">&larr; トップページに戻る</a></p>
+  <nav class="back-links">
+    <a href="./index.html">← トップページに戻る</a>
+    <a href="./dq_character.html">← キャラクター情報に戻る</a>
+  </nav>
 
-    <section class="character-block">
-      <h1>DQ2サマルトリア王女</h1>
-      <table class="data-table">
+  <header>
+    <h1>DQ2サマルトリア王女</h1>
+  </header>
+
+  <main>
+    <section id="initial-stats-section">
+      <h2>初期ステータス（HD-2D版）</h2>
+      <p class="note">
+        dq_Initial value.csv の内容を元にした初期レベル＆能力値です。<br>
+        ※HP・MPはCSVに含めていませんが、目安として「HPはたいりょくの2倍」「MPはかしこさの2倍」と考えてください。
+      </p>
+      <table id="initial-stats-table">
         <thead>
-          <tr><th>Lv</th><th>呪文</th><th>特技</th></tr>
+          <tr>
+            <th>キャラ名</th>
+            <th>初期Lv</th>
+            <th>ちから</th>
+            <th>みのまもり</th>
+            <th>すばやさ</th>
+            <th>たいりょく</th>
+            <th>かしこさ</th>
+            <th>うんのよさ</th>
+          </tr>
         </thead>
         <tbody>
-              <tr><td>20</td><td>ホイミ、インパス、メラ、メラミ、ヒャド、ヒャダルコ、</td><td>ねむりアタック、まわしげり、しびれアタック、ツッコミ、みかわしきゃく、くすぐりの刑</td></tr>
-              <tr><td>23</td><td></td><td>まりょくの風</td></tr>
-              <tr><td>25</td><td></td><td>しんくうは</td></tr>
-              <tr><td>26</td><td>ヒャダイン</td><td></td></tr>
-              <tr><td>27</td><td></td><td>らせん打ち</td></tr>
-              <tr><td>30</td><td>リホイミ</td><td></td></tr>
-              <tr><td>32</td><td>マホキテ</td><td>ムーンサルト</td></tr>
-              <tr><td>33</td><td></td><td>明鏡止水</td></tr>
-              <tr><td>34</td><td>マヒャド</td><td></td></tr>
-              <tr><td>35</td><td></td><td>ヒュプノスハント</td></tr>
-              <tr><td>37</td><td></td><td>ハッスルダンス</td></tr>
-              <tr><td>38</td><td>メラゾーマ</td><td></td></tr>
-              <tr><td>41</td><td></td><td>双竜打ち</td></tr>
+          <tr><td colspan="8">読み込み中...</td></tr>
         </tbody>
       </table>
     </section>
- <p><a href="dq_character.html">&larr; キャラクター情報に戻る</a></p>
-    <p><a href="index.html">&larr; トップページに戻る</a></p>
+
+    <section id="exp-table-section">
+      <h2>レベル別経験値（DQ2）</h2>
+      <p class="note">
+        dq2_experience value table.csv を元にした経験値テーブルです。<br>
+        「累計経験値」はそのレベル到達までの合計値、「次レベルまで」は次のレベルに必要な経験値を表します。<br>
+        ※加入レベルのキャラは「加入時」と表記しています。
+      </p>
+      <table id="exp-table">
+        <thead>
+          <tr>
+            <th>Lv</th>
+            <th>累計経験値</th>
+            <th>次レベルまで</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3">読み込み中...</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="skills-section">
+      <h2>習得呪文・特技</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Lv</th>
+            <th>習得呪文・特技</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>20</td><td>ホイミ、インパス、メラ、メラミ、ヒャド、ヒャダルコ、ねむりアタック、まわしげり、しびれアタック、ツッコミ、みかわしきゃく、くすぐりの刑</td></tr>
+          <tr><td>23</td><td>まりょくの風</td></tr>
+          <tr><td>25</td><td>しんくうは</td></tr>
+          <tr><td>26</td><td>ヒャダイン</td></tr>
+          <tr><td>27</td><td>らせん打ち</td></tr>
+          <tr><td>30</td><td>リホイミ</td></tr>
+          <tr><td>32</td><td>マホキテ／ムーンサルト</td></tr>
+          <tr><td>33</td><td>明鏡止水</td></tr>
+          <tr><td>34</td><td>マヒャド</td></tr>
+          <tr><td>35</td><td>ヒュプノスハント</td></tr>
+          <tr><td>37</td><td>ハッスルダンス</td></tr>
+          <tr><td>38</td><td>メラゾーマ</td></tr>
+          <tr><td>41</td><td>双竜打ち</td></tr>
+        </tbody>
+      </table>
+    </section>
   </main>
+
+  <script>
+    const CHARACTER_CONFIG = {
+      initialName: "DQ2サマルトリア王女",
+      expTotalColumn: "DQ2サマルトリア王女",
+      expNextColumn: "次レベルまで.3"
+    };
+
+    async function loadCsv(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error("CSV読み込み失敗: " + path);
+      const text = await res.text();
+      const parsed = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      return parsed.data;
+    }
+
+    function fillInitialStats(rows) {
+      const tbody = document.querySelector("#initial-stats-table tbody");
+      tbody.innerHTML = "";
+      const row = rows.find(r => r["キャラ名"] === CHARACTER_CONFIG.initialName);
+      if (!row) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.textContent = "該当キャラの行が見つかりませんでした（CSVのキャラ名をご確認ください）。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      const tr = document.createElement("tr");
+      function cell(key) {
+        const td = document.createElement("td");
+        td.textContent = row[key] ?? "";
+        return td;
+      }
+      tr.appendChild(cell("キャラ名"));
+      tr.appendChild(cell("初期レベル"));
+      tr.appendChild(cell("ちから"));
+      tr.appendChild(cell("みのまもり"));
+      tr.appendChild(cell("すばやさ"));
+      tr.appendChild(cell("たいりょく"));
+      tr.appendChild(cell("かしこさ"));
+      tr.appendChild(cell("うんのよさ"));
+      tbody.appendChild(tr);
+    }
+
+    function fillExpTable(rows) {
+      const tbody = document.querySelector("#exp-table tbody");
+      tbody.innerHTML = "";
+      for (const r of rows) {
+        const level = r["レベル"];
+        const total = r[CHARACTER_CONFIG.expTotalColumn];
+        const next = r[CHARACTER_CONFIG.expNextColumn];
+        if (!level || (total == null && next == null)) continue;
+
+        const tr = document.createElement("tr");
+        const tdLv = document.createElement("td");
+        tdLv.textContent = level;
+        tr.appendChild(tdLv);
+
+        const tdTotal = document.createElement("td");
+        tdTotal.textContent = total ?? "";
+        tr.appendChild(tdTotal);
+
+        const tdNext = document.createElement("td");
+        tdNext.textContent = next ?? "";
+        tr.appendChild(tdNext);
+
+        tbody.appendChild(tr);
+      }
+
+      if (!tbody.hasChildNodes()) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.textContent = "該当キャラの経験値データが見つかりませんでした。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+    }
+
+    (async function init() {
+      try {
+        const [initialRows, expRows] = await Promise.all([
+          loadCsv("dq_Initial%20value.csv"),
+          loadCsv("dq2_experience%20value%20table.csv"),
+        ]);
+        fillInitialStats(initialRows);
+        fillExpTable(expRows);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  </script>
 </body>
 </html>
