@@ -2,99 +2,65 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>DQ1 ボス耐性一覧（HD-2D版）</title>
+  <title>DQI ボス耐性一覧（HD-2D版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 16px;
-  background: #111;
-  color: #f5f5f5;
+  background-color: #f7f2e9; /* ややオレンジがかった薄いグレー */
+  color: #333;
 }
 a {
-  color: #7fd1ff;
+  color: #1f5faa;
 }
-h1 {
+header h1, h1 {
   font-size: 1.6rem;
+  margin-top: 0;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid #444;
-  padding-bottom: 0.3rem;
+  border-bottom: 2px solid #d4b27c;
+  padding-bottom: 0.25rem;
 }
 h2 {
   font-size: 1.2rem;
-  margin-top: 1.8rem;
-  border-left: 4px solid #7fd1ff;
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-left: 4px solid #d4b27c;
   padding-left: 0.5rem;
 }
-.nav-links {
+nav, .nav-links {
   margin-bottom: 12px;
   font-size: 0.9rem;
 }
-.nav-links a {
+nav a, .nav-links a {
   margin-right: 8px;
 }
-.description {
-  font-size: 0.9rem;
-  color: #ddd;
-  margin-bottom: 8px;
-}
-.legend {
+p.note, .legend {
   font-size: 0.85rem;
-  color: #ccc;
-  margin: 4px 0 12px;
-}
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 12px;
-  font-size: 0.9rem;
-}
-.controls label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.controls select,
-.controls input[type="search"] {
-  background: #181818;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 4px 6px;
-  color: #f5f5f5;
-  font-size: 0.9rem;
-}
-.table-wrapper {
-  overflow-x: auto;
-  border: 1px solid #333;
-  border-radius: 4px;
+  color: #555;
 }
 table {
   border-collapse: collapse;
-  min-width: 600px;
   width: 100%;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 th, td {
-  border: 1px solid #333;
+  border: 1px solid #ccc;
   padding: 4px 6px;
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
 }
 th {
-  background: #222;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  background-color: #f2e7d7;
 }
 tbody tr:nth-child(odd) {
-  background: #181818;
+  background-color: #fbf7f0;
 }
 tbody tr:nth-child(even) {
-  background: #151515;
+  background-color: #fdfaf5;
 }
 .name-col {
   text-align: left;
@@ -102,35 +68,57 @@ tbody tr:nth-child(even) {
 .status-empty {
   text-align: center;
   padding: 12px 0;
-  color: #aaa;
+  color: #777;
 }
 @media (max-width: 768px) {
   body {
     padding: 12px;
   }
-  h1 {
+  header h1, h1 {
     font-size: 1.3rem;
-  }
-  .controls {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 12px;
+    font-size: 0.9rem;
+  }
+  .controls label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .controls select,
+  .controls input[type="search"] {
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #bbb;
+    font-size: 0.9rem;
+  }
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  th, td { text-align: center; }
+  th.name-col, td.name-col { text-align: left; }
+  .description { font-size: 0.9rem; color: #555; }
+  .legend { margin-top: 4px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <div class="nav-links">
     <a href="./index.html">← トップに戻る</a>
-    <a href="./dq1_boss_list.html">← DQ1 ボス一覧に戻る</a>
-    <a href="./dq2_boss_resistance.html">→ DQ2 ボス耐性へ</a>
+    <a href="./dq1_boss_list.html">← DQI ボス一覧に戻る</a>
+    <a href="./dq2_boss_resistance.html">→ DQII ボス耐性へ</a>
   </div>
 
   <header>
-    <h1>DQ1 ボス耐性一覧（HD-2D版）</h1>
+    <h1>DQI ボス耐性一覧（HD-2D版）</h1>
     <p class="description">
-      各ボスについて、攻撃呪文・補助・状態異常などの効きやすさを一覧にまとめています。
+      各ボスについて、攻撃呪文・補助・状態異常などの効きやすさを一覧にしています。
     </p>
     <p class="legend">
       ◎…特に有効　／　○…有効　／　△…やや効きにくい　／　×…ほとんど効かない
@@ -139,7 +127,7 @@ tbody tr:nth-child(even) {
 
   <main>
     <section>
-      <h2>耐性一覧</h2>
+      <h2>一覧</h2>
       <div class="controls">
         <label>
           ボス戦名で絞り込み：
@@ -172,7 +160,7 @@ tbody tr:nth-child(even) {
       const thead = document.querySelector("#res-table thead");
       thead.innerHTML = "";
       const tr = document.createElement("tr");
-      headers.forEach((h, idx) => {
+      headers.forEach(h => {
         const th = document.createElement("th");
         th.textContent = h;
         if (h === "ボス戦名" || h === "個体名") {
@@ -196,17 +184,15 @@ tbody tr:nth-child(even) {
         tbody.appendChild(tr);
         return;
       }
-
       const headers = Object.keys(rows[0]);
       rows.forEach(row => {
         const tr = document.createElement("tr");
-        headers.forEach((h, idx) => {
+        headers.forEach((h) => {
           const td = document.createElement("td");
           if (h === "ボス戦名" || h === "個体名") {
             td.classList.add("name-col");
           }
-          const value = row[h] ?? "";
-          td.textContent = value;
+          td.textContent = row[h] ?? "";
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -228,7 +214,6 @@ tbody tr:nth-child(even) {
     function applyFilters() {
       const bossValue = document.getElementById("boss-filter").value;
       const textValue = document.getElementById("name-filter").value.trim();
-
       let filtered = allRows.slice();
       if (bossValue) {
         filtered = filtered.filter(r => r["ボス戦名"] === bossValue);
@@ -254,7 +239,6 @@ tbody tr:nth-child(even) {
         });
         const rows = parsed.data;
         if (!rows.length) throw new Error("データが空です");
-
         allRows = rows;
         createTableHeader(Object.keys(rows[0]));
         fillFilters(rows);

@@ -11,67 +11,56 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 16px;
-  background: #111;
-  color: #f5f5f5;
+  background-color: #f7f2e9; /* ややオレンジがかった薄いグレー */
+  color: #333;
 }
 a {
-  color: #7fd1ff;
+  color: #1f5faa;
 }
-header h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.3rem;
+header h1, h1 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #d4b27c;
+  padding-bottom: 0.25rem;
 }
-header p {
-  font-size: 0.9rem;
-  color: #ddd;
+h2 {
+  font-size: 1.2rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-left: 4px solid #d4b27c;
+  padding-left: 0.5rem;
 }
-.nav-links {
+nav, .nav-links {
   margin-bottom: 12px;
   font-size: 0.9rem;
 }
-.nav-links a {
+nav a, .nav-links a {
   margin-right: 8px;
 }
-h2 {
-  font-size: 1.1rem;
-  margin-top: 1.6rem;
-  border-left: 4px solid #7fd1ff;
-  padding-left: 0.5rem;
-}
-.boss-name {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-.legend {
+p.note, .legend {
   font-size: 0.85rem;
-  color: #ccc;
-  margin: 4px 0 10px;
-}
-.table-wrapper {
-  overflow-x: auto;
-  border: 1px solid #333;
-  border-radius: 4px;
+  color: #555;
 }
 table {
   border-collapse: collapse;
-  min-width: 600px;
   width: 100%;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 th, td {
-  border: 1px solid #333;
+  border: 1px solid #ccc;
   padding: 4px 6px;
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
 }
 th {
-  background: #222;
+  background-color: #f2e7d7;
 }
 tbody tr:nth-child(odd) {
-  background: #181818;
+  background-color: #fbf7f0;
 }
 tbody tr:nth-child(even) {
-  background: #151515;
+  background-color: #fdfaf5;
 }
 .name-col {
   text-align: left;
@@ -79,13 +68,20 @@ tbody tr:nth-child(even) {
 .status-empty {
   text-align: center;
   padding: 12px 0;
-  color: #aaa;
+  color: #777;
 }
 @media (max-width: 768px) {
-  body { padding: 12px; }
-  header h1 { font-size: 1.3rem; }
+  body {
+    padding: 12px;
+  }
+  header h1, h1 {
+    font-size: 1.3rem;
+  }
 }
 
+  .section-box {
+    margin-bottom: 16px;
+  }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
@@ -97,30 +93,29 @@ tbody tr:nth-child(even) {
 
   <header>
     <h1>DQI ボス詳細</h1>
-    <p id="boss-title" class="boss-name"></p>
-    <p>
-      各ボスごとの行動や耐性などをまとめたページです。<br>
-      このページはボス一覧からのリンク、またはURLの ?boss= にボス戦名を指定して表示します。
-    </p>
+    <p id="boss-title"></p>
   </header>
 
   <main>
-    <section id="resistance-section">
+    <section id="basic-info" class="section-box">
+      <h2>基本情報</h2>
+      <p class="note">
+        HPや攻撃パターン、経験値・ゴールドなどの詳細は順次追記していきます。
+      </p>
+    </section>
+
+    <section id="resistance-section" class="section-box">
       <h2>耐性まとめ</h2>
       <p class="legend">
         ◎…特に有効　／　○…有効　／　△…やや効きにくい　／　×…ほとんど効かない
       </p>
-      <div class="table-wrapper">
-        <table id="res-table">
-          <thead></thead>
-          <tbody>
-            <tr><td class="status-empty">読み込み中...</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <table id="res-table">
+        <thead></thead>
+        <tbody>
+          <tr><td class="status-empty">読み込み中...</td></tr>
+        </tbody>
+      </table>
     </section>
-
-    <!-- 今後、行動パターンや推奨レベルなどもこの下に追加していく想定 -->
   </main>
 
   <script>
@@ -128,14 +123,13 @@ tbody tr:nth-child(even) {
 
     function getBossNameFromQuery() {
       const params = new URLSearchParams(window.location.search);
-      const name = params.get("boss");
-      return name || "";
+      return params.get("boss") || "";
     }
 
     function setBossTitle(name) {
       const el = document.getElementById("boss-title");
       if (!name) {
-        el.textContent = "ボス名が指定されていません";
+        el.textContent = "ボス戦名が指定されていません。";
       } else {
         el.textContent = "ボス戦名：" + name;
       }
@@ -148,9 +142,7 @@ tbody tr:nth-child(even) {
       headers.forEach(h => {
         const th = document.createElement("th");
         th.textContent = h;
-        if (h === "個体名") {
-          th.classList.add("name-col");
-        }
+        if (h === "個体名") th.classList.add("name-col");
         tr.appendChild(th);
       });
       thead.appendChild(tr);
@@ -169,7 +161,6 @@ tbody tr:nth-child(even) {
         tbody.appendChild(tr);
         return;
       }
-
       rows.forEach(row => {
         const tr = document.createElement("tr");
         headers.forEach(h => {
@@ -184,6 +175,17 @@ tbody tr:nth-child(even) {
 
     async function loadResistance(bossName) {
       const tbody = document.querySelector("#res-table tbody");
+      if (!bossName) {
+        tbody.innerHTML = "";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 99;
+        td.className = "status-empty";
+        td.textContent = "ボス戦名が指定されていません。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
       try {
         const res = await fetch(CSV_PATH);
         if (!res.ok) throw new Error("データの読み込みに失敗しました");
@@ -192,24 +194,7 @@ tbody tr:nth-child(even) {
           header: true,
           skipEmptyLines: true,
         });
-        let rows = parsed.data;
-
-        if (!bossName) {
-          // boss 名が指定されていない場合は何も表示しない
-          tbody.innerHTML = "";
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 99;
-          td.className = "status-empty";
-          td.textContent = "URLの ?boss= にボス戦名を指定してください。";
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-          return;
-        }
-
-        // ボス戦名で絞り込み
-        rows = rows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
-
+        let rows = parsed.data.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
         if (!rows.length) {
           tbody.innerHTML = "";
           const tr = document.createElement("tr");
@@ -221,11 +206,8 @@ tbody tr:nth-child(even) {
           tbody.appendChild(tr);
           return;
         }
-
-        // ヘッダーは「ボス戦名」を除いた列を表示対象に
         const allHeaders = Object.keys(rows[0]);
         const headers = allHeaders.filter(h => h !== "ボス戦名");
-
         createTableHeader(headers);
         renderRows(rows, headers);
       } catch (e) {

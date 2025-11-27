@@ -5,73 +5,85 @@
   <title>DQ2ローレシア王子 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  background-color: #f7f2e9; /* ややオレンジがかった薄いグレー */
+  color: #333;
+}
+a {
+  color: #1f5faa;
+}
+header h1, h1 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #d4b27c;
+  padding-bottom: 0.25rem;
+}
+h2 {
+  font-size: 1.2rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-left: 4px solid #d4b27c;
+  padding-left: 0.5rem;
+}
+nav, .nav-links {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+nav a, .nav-links a {
+  margin-right: 8px;
+}
+p.note, .legend {
+  font-size: 0.85rem;
+  color: #555;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  background-color: #f2e7d7;
+}
+tbody tr:nth-child(odd) {
+  background-color: #fbf7f0;
+}
+tbody tr:nth-child(even) {
+  background-color: #fdfaf5;
+}
+.name-col {
+  text-align: left;
+}
+.status-empty {
+  text-align: center;
+  padding: 12px 0;
+  color: #777;
+}
+@media (max-width: 768px) {
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    line-height: 1.6;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 16px;
-    background: #111;
-    color: #f5f5f5;
+    padding: 12px;
   }
-  a {
-    color: #7fd1ff;
+  header h1, h1 {
+    font-size: 1.3rem;
   }
-  header, nav {
-    margin-bottom: 16px;
-  }
-  h1 {
-    font-size: 1.6rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid #444;
-    padding-bottom: 0.3rem;
-  }
-  h2 {
-    font-size: 1.2rem;
-    margin-top: 1.8rem;
-    border-left: 4px solid #7fd1ff;
-    padding-left: 0.5rem;
-  }
-  p.note {
-    font-size: 0.9rem;
-    color: #ccc;
-  }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-  }
-  th, td {
-    border: 1px solid #444;
-    padding: 4px 6px;
-    text-align: left;
-    white-space: nowrap;
-  }
-  th {
-    background: #222;
-  }
-  tbody tr:nth-child(odd) {
-    background: #181818;
-  }
-  tbody tr:nth-child(even) {
-    background: #151515;
-  }
-  .small {
-    font-size: 0.85rem;
-  }
-  .back-links {
-    margin-bottom: 8px;
-  }
-  .back-links a {
-    margin-right: 8px;
-  }
-</style>
+}
 
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-  <nav class="back-links">
+  <nav>
     <a href="./index.html">← トップページに戻る</a>
     <a href="./dq_character.html">← キャラクター情報に戻る</a>
   </nav>
@@ -84,8 +96,8 @@
     <section id="initial-stats-section">
       <h2>初期ステータス（HD-2D版）</h2>
       <p class="note">
-      ※目安として「HPはたいりょくの2倍」「MPはかしこさの2倍」と考えてください。<br>
-        
+        ゲーム内の検証結果をもとにした初期レベルと能力値の一覧です。<br>
+        HP・MPは表には含めていませんが、目安として「HPはたいりょくの2倍」「MPはかしこさの2倍」と考えてください。
       </p>
       <table id="initial-stats-table">
         <thead>
@@ -101,27 +113,27 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="8">読み込み中...</td></tr>
+          <tr><td colspan="8" class="status-empty">読み込み中...</td></tr>
         </tbody>
       </table>
     </section>
 
     <section id="exp-table-section">
-      <h2>レベル別経験値（DQ2）</h2>
+      <h2>レベル別経験値</h2>
       <p class="note">
-        「累計経験値」はそのレベル到達までの合計値、「次レベルまで」は次のレベルに必要な経験値を表します。<br>
-        ※加入レベルのキャラは「加入時」と表記しています。
+        各レベル到達までに必要なおおよその経験値です。<br>
+        「累計」はそのレベルまでの合計値、「次レベルまで」は次のレベルに上がるために必要なおおよその値を表します。
       </p>
       <table id="exp-table">
         <thead>
           <tr>
             <th>Lv</th>
-            <th>累計経験値</th>
+            <th>累計</th>
             <th>次レベルまで</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="3">読み込み中...</td></tr>
+          <tr><td colspan="3" class="status-empty">読み込み中...</td></tr>
         </tbody>
       </table>
     </section>
@@ -132,7 +144,7 @@
         <thead>
           <tr>
             <th>Lv</th>
-            <th>習得呪文・特技</th>
+            <th>内容</th>
           </tr>
         </thead>
         <tbody>
@@ -167,7 +179,7 @@
 
     async function loadCsv(path) {
       const res = await fetch(path);
-      if (!res.ok) throw new Error("CSV読み込み失敗: " + path);
+      if (!res.ok) throw new Error("読み込み失敗: " + path);
       const text = await res.text();
       const parsed = Papa.parse(text, {
         header: true,
@@ -179,12 +191,13 @@
     function fillInitialStats(rows) {
       const tbody = document.querySelector("#initial-stats-table tbody");
       tbody.innerHTML = "";
-      const row = rows.find(r => r["キャラ名"] === CHARACTER_CONFIG.initialName);
+      const row = rows.find(r => (r["キャラ名"] || "").trim() === CHARACTER_CONFIG.initialName);
       if (!row) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
         td.colSpan = 8;
-        td.textContent = "該当キャラの行が見つかりませんでした（CSVのキャラ名をご確認ください）。";
+        td.className = "status-empty";
+        td.textContent = "該当キャラクターのデータが見つかりませんでした。";
         tr.appendChild(td);
         tbody.appendChild(tr);
         return;
@@ -230,12 +243,12 @@
 
         tbody.appendChild(tr);
       }
-
       if (!tbody.hasChildNodes()) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
         td.colSpan = 3;
-        td.textContent = "該当キャラの経験値データが見つかりませんでした。";
+        td.className = "status-empty";
+        td.textContent = "経験値データが見つかりませんでした。";
         tr.appendChild(td);
         tbody.appendChild(tr);
       }
