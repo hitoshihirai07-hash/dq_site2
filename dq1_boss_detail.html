@@ -51,6 +51,7 @@
 <p><a href="dq1_boss_list.html">DQI ボス一覧に戻る</a></p>
 
   <script src="boss_pages.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     (function() {
       const CSV_PATH = "dq1_boss_resistance.csv";
@@ -66,29 +67,13 @@
         return s === "" || s.toLowerCase() === "nan";
       }
 
-      function parseCsv(text) {
-        const lines = text.replace(//g, "").split("
-").filter(l => l.trim() !== "");
-        if (!lines.length) return [];
-        const headers = lines[0].split(",");
-        const rows = [];
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(",");
-          const row = {};
-          headers.forEach((h, idx) => {
-            row[h] = cols[idx] !== undefined ? cols[idx] : "";
-          });
-          rows.push(row);
-        }
-        return rows;
-      }
-
       async function loadResistance() {
         const bossName = getBossNameFromQuery();
         const table = document.getElementById("boss-resistance-table");
         if (!table) return;
         const thead = table.querySelector("thead");
         const tbody = table.querySelector("tbody");
+        thead.innerHTML = "";
         tbody.innerHTML = "";
 
         if (!bossName) {
@@ -105,9 +90,13 @@
           const res = await fetch(CSV_PATH);
           if (!res.ok) throw new Error("読み込み失敗");
           const text = await res.text();
-          const rows = parseCsv(text);
+          const parsed = Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+          });
+          const rows = parsed.data;
 
-          const target = rows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
+          const target = rows.filter(r => ((r["ボス戦名"] || "").trim() === bossName.trim()));
           if (!target.length) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
@@ -130,7 +119,6 @@
             th.textContent = col;
             trHead.appendChild(th);
           });
-          thead.innerHTML = "";
           thead.appendChild(trHead);
 
           target.forEach(r => {
