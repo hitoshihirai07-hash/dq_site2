@@ -11,7 +11,7 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 16px;
-  background-color: #f7f2e9; /* トップページと同系統の薄いオレンジ系 */
+  background-color: #f7f2e9; /* トップと同系統の薄いオレンジ系 */
   color: #333;
 }
 a {
@@ -48,7 +48,6 @@ th, td {
   border: 1px solid #ccc;
   padding: 4px 6px;
   text-align: left;
-  white-space: nowrap;
 }
 th {
   background-color: #f2e7d7;
@@ -63,6 +62,21 @@ tbody tr:nth-child(even) {
   text-align: center;
   padding: 8px 0;
   color: #777;
+}
+.action-unit {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid #d4b27c;
+  background-color: #fdfaf5;
+}
+.action-unit h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+.action-unit p {
+  margin: 0;
+  white-space: pre-wrap; /* 行動パターンを折り返して表示 */
+  font-size: 0.9rem;
 }
 @media (max-width: 768px) {
   body {
@@ -85,13 +99,18 @@ tbody tr:nth-child(even) {
   <h1>DQI ボス詳細</h1>
   <p id="boss-title"></p>
 
-  <h2>ステータス・行動パターン</h2>
-  <table id="multi-table">
+  <h2>ステータス</h2>
+  <table id="status-table">
     <thead></thead>
     <tbody>
       <tr><td class="status-empty">読み込み中...</td></tr>
     </tbody>
   </table>
+
+  <h2>行動パターン</h2>
+  <div id="action-container">
+    <p class="status-empty">読み込み中...</p>
+  </div>
 
   <h2>耐性まとめ</h2>
   <p>◎…特に有効 ／ ○…有効 ／ △…やや効きにくい ／ ×…ほとんど効かない</p>
@@ -137,9 +156,9 @@ tbody tr:nth-child(even) {
       return s === "" || s.toLowerCase() === "nan";
     }
 
-    function buildMultiTable(rows) {
-      const thead = document.querySelector("#multi-table thead");
-      const tbody = document.querySelector("#multi-table tbody");
+    function buildStatusTable(rows) {
+      const thead = document.querySelector("#status-table thead");
+      const tbody = document.querySelector("#status-table tbody");
       thead.innerHTML = "";
       tbody.innerHTML = "";
 
@@ -148,39 +167,82 @@ tbody tr:nth-child(even) {
         const td = document.createElement("td");
         td.colSpan = 99;
         td.className = "status-empty";
-        td.textContent = "このボスの情報は登録されていません。";
+        td.textContent = "このボスのステータス情報は登録されていません。";
         tr.appendChild(td);
         tbody.appendChild(tr);
         return;
       }
 
       const allCols = Object.keys(rows[0]);
-      // ボス戦名列は非表示
-      const candidateCols = allCols.filter(c => c !== "ボス戦名");
-      // 全行が空欄の列は非表示
-      const visibleCols = candidateCols.filter(col =>
+      const preferred = ["個体名", "体数", "HP", "攻撃力", "守備力", "経験値", "ゴールド", "出現場所"];
+      const candidate = preferred.filter(c => allCols.includes(c));
+      const visible = candidate.filter(col =>
         rows.some(r => !isEmptyValue(r[col]))
       );
 
-      // ヘッダー
       const trHead = document.createElement("tr");
-      visibleCols.forEach(col => {
+      visible.forEach(col => {
         const th = document.createElement("th");
         th.textContent = col;
         trHead.appendChild(th);
       });
       thead.appendChild(trHead);
 
-      // 本文
       rows.forEach(r => {
         const tr = document.createElement("tr");
-        visibleCols.forEach(col => {
+        visible.forEach(col => {
           const td = document.createElement("td");
           const v = r[col];
           td.textContent = isEmptyValue(v) ? "" : v;
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
+      });
+    }
+
+    function buildActionBlocks(rows) {
+      const container = document.getElementById("action-container");
+      container.innerHTML = "";
+
+      if (!rows.length) {
+        const p = document.createElement("p");
+        p.className = "status-empty";
+        p.textContent = "このボスの行動パターン情報は登録されていません。";
+        container.appendChild(p);
+        return;
+      }
+
+      const allCols = Object.keys(rows[0]);
+      const statusCols = ["ボス戦名", "個体名", "体数", "HP", "攻撃力", "守備力", "経験値", "ゴールド", "出現場所"];
+      const textCols = allCols.filter(c => !statusCols.includes(c));
+
+      rows.forEach(r => {
+        const unitDiv = document.createElement("div");
+        unitDiv.className = "action-unit";
+
+        const h = document.createElement("h3");
+        h.textContent = (r["個体名"] || "").trim() || "個体";
+        unitDiv.appendChild(h);
+
+        let lines = [];
+        textCols.forEach(col => {
+          const v = r[col];
+          if (!isEmptyValue(v)) {
+            if (col === "特徴メモ") {
+              lines.push("特徴：" + v);
+            } else if (col === "行動パターン") {
+              lines.push("行動パターン：" + v);
+            } else {
+              lines.push(col + "：" + v);
+            }
+          }
+        });
+
+        const p = document.createElement("p");
+        p.textContent = lines.join("\n");
+        unitDiv.appendChild(p);
+
+        container.appendChild(unitDiv);
       });
     }
 
@@ -202,13 +264,13 @@ tbody tr:nth-child(even) {
       }
 
       const allCols = Object.keys(rows[0]);
-      const candidateCols = allCols.filter(c => c !== "ボス戦名");
-      const visibleCols = candidateCols.filter(col =>
+      const candidate = allCols.filter(c => c !== "ボス戦名");
+      const visible = candidate.filter(col =>
         rows.some(r => !isEmptyValue(r[col]))
       );
 
       const trHead = document.createElement("tr");
-      visibleCols.forEach(col => {
+      visible.forEach(col => {
         const th = document.createElement("th");
         th.textContent = col;
         trHead.appendChild(th);
@@ -217,7 +279,7 @@ tbody tr:nth-child(even) {
 
       rows.forEach(r => {
         const tr = document.createElement("tr");
-        visibleCols.forEach(col => {
+        visible.forEach(col => {
           const td = document.createElement("td");
           const v = r[col];
           td.textContent = isEmptyValue(v) ? "" : v;
@@ -232,7 +294,8 @@ tbody tr:nth-child(even) {
       setBossTitle(bossName);
 
       if (!bossName) {
-        buildMultiTable([]);
+        buildStatusTable([]);
+        buildActionBlocks([]);
         buildResTable([]);
         return;
       }
@@ -240,10 +303,12 @@ tbody tr:nth-child(even) {
       try {
         const multiRows = await loadCsv(CSV_MULTI);
         const targetMulti = multiRows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
-        buildMultiTable(targetMulti);
+        buildStatusTable(targetMulti);
+        buildActionBlocks(targetMulti);
       } catch (e) {
         console.error(e);
-        buildMultiTable([]);
+        buildStatusTable([]);
+        buildActionBlocks([]);
       }
 
       try {
