@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>DQI ボス詳細（HD-2D版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- ここでは全体の色指定は行わず、トップページと同じ共通スタイルに従います -->
+  <!-- サイト全体のデザインに合わせるため、このページでは個別の色指定を行いません -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -14,32 +14,38 @@
   <p id="boss-title"></p>
 
   <h2>ステータス</h2>
-  <p>HPや経験値、ゴールドなどの基本的な情報をまとめる欄です。</p>
-  <!--
-    ここに既存の「HP・経験値・ゴールド」の表やメモがあれば、そのまま貼り付けてください。
-    例：
-    <table>
-      <tr><th>HP</th><td>○○○</td></tr>
-      <tr><th>経験値</th><td>○○○</td></tr>
-      <tr><th>ゴールド</th><td>○○○</td></tr>
-    </table>
-  -->
+  <table id="status-table" border="1" cellspacing="0" cellpadding="4">
+    <thead>
+      <tr>
+        <th>個体名</th>
+        <th>体数</th>
+        <th>HP</th>
+        <th>経験値</th>
+        <th>ゴールド</th>
+        <th>出現場所</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="6">読み込み中...</td></tr>
+    </tbody>
+  </table>
 
   <h2>行動パターン</h2>
-  <p>通常攻撃や特技、行動回数などのパターンをまとめる欄です。</p>
-  <!--
-    ここに既存の「行動パターン」のリストやメモがあれば、そのまま貼り付けてください。
-    例：
-    <ul>
-      <li>通常攻撃</li>
-      <li>ちからため → 大ダメージ攻撃</li>
-      <li>ランダムで○○の呪文を使用 など</li>
-    </ul>
-  -->
+  <table id="action-table" border="1" cellspacing="0" cellpadding="4">
+    <thead>
+      <tr>
+        <th>個体名</th>
+        <th>特徴メモ</th>
+        <th>行動パターン</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="3">読み込み中...</td></tr>
+    </tbody>
+  </table>
 
   <h2>耐性まとめ</h2>
   <p>◎…特に有効 ／ ○…有効 ／ △…やや効きにくい ／ ×…ほとんど効かない</p>
-
   <table id="res-table" border="1" cellspacing="0" cellpadding="4">
     <thead></thead>
     <tbody>
@@ -48,7 +54,8 @@
   </table>
 
   <script>
-    const CSV_PATH = "dq1_boss_resistance.csv";
+    const CSV_MULTI = "dq1_boss_multiunit.csv";
+    const CSV_RESIST = "dq1_boss_resistance.csv";
 
     function getBossNameFromQuery() {
       const params = new URLSearchParams(window.location.search);
@@ -64,7 +71,72 @@
       }
     }
 
-    function createTableHeader(headers) {
+    async function loadCsv(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error("データの読み込みに失敗しました: " + path);
+      const text = await res.text();
+      const parsed = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      return parsed.data;
+    }
+
+    function fillStatusTable(rows) {
+      const tbody = document.querySelector("#status-table tbody");
+      tbody.innerHTML = "";
+      if (!rows.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "このボスのステータス情報は登録されていません。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        const cols = ["個体名", "体数", "HP", "経験値", "ゴールド", "出現場所"];
+        cols.forEach(c => {
+          const td = document.createElement("td");
+          td.textContent = r[c] ?? "";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function fillActionTable(rows) {
+      const tbody = document.querySelector("#action-table tbody");
+      tbody.innerHTML = "";
+      if (!rows.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.textContent = "このボスの行動パターン情報は登録されていません。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        const nameTd = document.createElement("td");
+        nameTd.textContent = r["個体名"] ?? "";
+        tr.appendChild(nameTd);
+
+        const featureTd = document.createElement("td");
+        featureTd.textContent = r["特徴メモ"] ?? "";
+        tr.appendChild(featureTd);
+
+        const actTd = document.createElement("td");
+        actTd.textContent = r["行動パターン"] ?? "";
+        tr.appendChild(actTd);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function createResHeader(headers) {
       const thead = document.querySelector("#res-table thead");
       thead.innerHTML = "";
       const tr = document.createElement("tr");
@@ -76,7 +148,7 @@
       thead.appendChild(tr);
     }
 
-    function renderRows(rows, headers) {
+    function fillResTable(rows, headers) {
       const tbody = document.querySelector("#res-table tbody");
       tbody.innerHTML = "";
       if (!rows.length) {
@@ -88,71 +160,56 @@
         tbody.appendChild(tr);
         return;
       }
-
-      rows.forEach(row => {
+      rows.forEach(r => {
         const tr = document.createElement("tr");
         headers.forEach(h => {
           const td = document.createElement("td");
-          td.textContent = row[h] ?? "";
+          td.textContent = r[h] ?? "";
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
     }
 
-    async function loadResistance(bossName) {
-      const tbody = document.querySelector("#res-table tbody");
+    async function init() {
+      const bossName = getBossNameFromQuery();
+      setBossTitle(bossName);
+
       if (!bossName) {
-        tbody.innerHTML = "";
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 99;
-        td.textContent = "ボス戦名が指定されていません。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        // boss指定が無い場合はテーブルだけエラー表示にして終了
+        fillStatusTable([]);
+        fillActionTable([]);
+        fillResTable([], []);
         return;
       }
 
       try {
-        const res = await fetch(CSV_PATH);
-        if (!res.ok) throw new Error("データの読み込みに失敗しました");
-        const text = await res.text();
-        const parsed = Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true,
-        });
-        let rows = parsed.data.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
-        if (!rows.length) {
-          tbody.innerHTML = "";
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 99;
-          td.textContent = "指定されたボス戦名に対応する耐性データが見つかりませんでした。";
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-          return;
+        // ステータス・行動パターン
+        const multiRows = await loadCsv(CSV_MULTI);
+        const targetMulti = multiRows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
+        fillStatusTable(targetMulti);
+        fillActionTable(targetMulti);
+
+        // 耐性
+        const resRows = await loadCsv(CSV_RESIST);
+        let targetRes = resRows.filter(r => (r["ボス戦名"] || "").trim() === bossName.trim());
+        if (!targetRes.length) {
+          fillResTable([], []);
+        } else {
+          const allHeaders = Object.keys(targetRes[0]);
+          const headers = allHeaders.filter(h => h !== "ボス戦名");
+          createResHeader(headers);
+          fillResTable(targetRes, headers);
         }
-        const allHeaders = Object.keys(rows[0]);
-        const headers = allHeaders.filter(h => h !== "ボス戦名");
-        createTableHeader(headers);
-        renderRows(rows, headers);
       } catch (e) {
         console.error(e);
-        tbody.innerHTML = "";
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 99;
-        td.textContent = "耐性データの読み込みに失敗しました。時間をおいて再度アクセスしてください。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        fillStatusTable([]);
+        fillActionTable([]);
+        fillResTable([], []);
       }
     }
 
-    (function init() {
-      const bossName = getBossNameFromQuery();
-      setBossTitle(bossName);
-      loadResistance(bossName);
-    })();
+    init();
   </script>
 </body>
 </html>
