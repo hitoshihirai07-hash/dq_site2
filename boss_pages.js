@@ -332,7 +332,7 @@ function setupBossDetail(root) {
 
         const thead = document.createElement("thead");
         const trh = document.createElement("tr");
-        ["個体名", "体数", "HP", "経験値", "ゴールド", "行動パターン", "メモ"].forEach((label) => {
+        ["個体名", "体数", "HP", "MP", "攻撃", "防御", "素早さ", "行動パターン", "メモ"].forEach((label) => {
           const th = document.createElement("th");
           th.textContent = label;
           trh.appendChild(th);
@@ -348,14 +348,16 @@ function setupBossDetail(root) {
             u.unit,
             u.count,
             u.hp,
-            u.exp,
-            u.gold,
+            u.mp,
+            u.atk,
+            u.def,
+            u.agi,
             formattedPattern,
             u.note || "",
           ];
           cols.forEach((val, index) => {
             const td = document.createElement("td");
-            if (index === 5 && typeof val === "string" && val.includes("<br>")) {
+            if (index === 7 && typeof val === "string" && val.includes("<br>")) {
               td.innerHTML = val; // 行動パターン列だけ <br> を解釈
             } else {
               td.textContent = val || "";
