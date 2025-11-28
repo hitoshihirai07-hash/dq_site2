@@ -206,6 +206,16 @@ function setupBossDetail(root) {
       const idxPattern = header.indexOf("行動パターン");
       const idxSrc = header.indexOf("参考元");
 
+      // 追加ステータス用の列（存在すれば利用する）
+      const idxMP = header.indexOf("MP") >= 0 ? header.indexOf("MP")
+                   : header.indexOf("ＭＰ");
+      const idxAtk = header.indexOf("攻撃") >= 0 ? header.indexOf("攻撃")
+                    : header.indexOf("攻撃力");
+      const idxDefCandidates = [header.indexOf("防御"), header.indexOf("守備"), header.indexOf("守備力")];
+      const idxDef = idxDefCandidates.find(index => index >= 0);
+      const idxAgiCandidates = [header.indexOf("素早さ"), header.indexOf("すばやさ")];
+      const idxAgi = idxAgiCandidates.find(index => index >= 0);
+
       if (idxBoss === -1) {
         root.textContent = "ボス名の列が見つかりません。";
         return;
@@ -219,6 +229,10 @@ function setupBossDetail(root) {
           unit: idxUnit >= 0 ? (cols[idxUnit] || "") : "",
           count: idxCount >= 0 ? (cols[idxCount] || "") : "",
           hp: idxHP >= 0 ? (cols[idxHP] || "") : "",
+          mp: typeof idxMP === "number" && idxMP >= 0 ? (cols[idxMP] || "") : "",
+          atk: typeof idxAtk === "number" && idxAtk >= 0 ? (cols[idxAtk] || "") : "",
+          def: typeof idxDef === "number" && idxDef >= 0 ? (cols[idxDef] || "") : "",
+          agi: typeof idxAgi === "number" && idxAgi >= 0 ? (cols[idxAgi] || "") : "",
           exp: idxExp >= 0 ? (cols[idxExp] || "") : "",
           gold: idxGold >= 0 ? (cols[idxGold] || "") : "",
           place: idxPlace >= 0 ? (cols[idxPlace] || "") : "",
@@ -264,13 +278,28 @@ function setupBossDetail(root) {
       h3.textContent = (mainUnit.unit || bossName) + countLabel;
       mainSection.appendChild(h3);
 
-      const pStatus = document.createElement("p");
-      const statusParts = [];
-      if (mainUnit.hp) statusParts.push("HP：" + mainUnit.hp);
-      if (mainUnit.exp) statusParts.push("経験値：" + mainUnit.exp);
-      if (mainUnit.gold) statusParts.push("ゴールド：" + mainUnit.gold);
-      pStatus.textContent = statusParts.join(" / ");
-      mainSection.appendChild(pStatus);
+      // ステータス（HP / MP / 攻撃 / 防御 / 素早さ）
+      const basicParts = [];
+      if (mainUnit.hp) basicParts.push("HP：" + mainUnit.hp);
+      if (mainUnit.mp) basicParts.push("MP：" + mainUnit.mp);
+      if (mainUnit.atk) basicParts.push("攻撃：" + mainUnit.atk);
+      if (mainUnit.def) basicParts.push("防御：" + mainUnit.def);
+      if (mainUnit.agi) basicParts.push("素早さ：" + mainUnit.agi);
+      if (basicParts.length) {
+        const pBasic = document.createElement("p");
+        pBasic.textContent = basicParts.join(" / ");
+        mainSection.appendChild(pBasic);
+      }
+
+      // 報酬（経験値・ゴールド）
+      const rewardParts = [];
+      if (mainUnit.exp) rewardParts.push("経験値：" + mainUnit.exp);
+      if (mainUnit.gold) rewardParts.push("ゴールド：" + mainUnit.gold);
+      if (rewardParts.length) {
+        const pReward = document.createElement("p");
+        pReward.textContent = rewardParts.join(" / ");
+        mainSection.appendChild(pReward);
+      }
 
       if (mainUnit.note) {
         const pNote = document.createElement("p");
