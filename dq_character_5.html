@@ -11,7 +11,7 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 16px;
-  background-color: #f7f2e9;
+  background-color: #f7f2e9; /* トップページと同系統の薄いオレンジ系 */
   color: #333;
 }
 a {
@@ -120,19 +120,18 @@ tbody tr:nth-child(even) {
       <h2>レベル別経験値</h2>
       <p class="note">
         各レベル到達までに必要なおおよその経験値です。<br>
-        「累計」はそのレベルまでの合計値、「次レベルまで」は次のレベルに上がるために必要なおおよその値を表します。<br>
-        そのキャラクターが仲間に加わる前のレベル帯は表示していません。
+        「累計」はそのレベルまでの合計値を表します。<br>
+        キャラクター加入前のレベル帯は表には表示していません。
       </p>
       <table id="exp-table">
         <thead>
           <tr>
             <th>Lv</th>
             <th>累計</th>
-            <th>次レベルまで</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="3" class="status-empty">読み込み中...</td></tr>
+          <tr><td colspan="2" class="status-empty">読み込み中...</td></tr>
         </tbody>
       </table>
     </section>
@@ -168,8 +167,7 @@ tbody tr:nth-child(even) {
   <script>
     const CHARACTER_CONFIG = {
       initialName: "DQ2サマルトリア王女",
-      expTotalColumn: "DQ2サマルトリア王女",
-      expNextColumn: "次レベルまで.3"
+      expTotalColumn: "DQ2サマルトリア王女"
     };
 
     async function loadCsv(path) {
@@ -221,53 +219,38 @@ tbody tr:nth-child(even) {
       tbody.appendChild(tr);
     }
 
-    function detectJoinLevel(rows) {
-      let joinLevel = null;
-      rows.forEach(r => {
-        const lvStr = r["レベル"];
-        if (lvStr === null || lvStr === undefined || String(lvStr).trim() === "") return;
-        const total = r[CHARACTER_CONFIG.expTotalColumn];
-        if (joinLevel === null && !isEmptyValue(total)) {
-          const lv = parseInt(lvStr, 10);
-          if (!Number.isNaN(lv)) {
-            joinLevel = lv;
-          }
-        }
-      });
-      return joinLevel;
-    }
-
     function fillExpTable(rows) {
       const tbody = document.querySelector("#exp-table tbody");
       tbody.innerHTML = "";
 
-      const joinLevel = detectJoinLevel(rows);
+      // 加入レベル（最初に累計が入る行）を特定
+      let joinLevel = null;
+      rows.forEach(r => {
+        const total = r[CHARACTER_CONFIG.expTotalColumn];
+        const level = r["レベル"];
+        if (!isEmptyValue(total) && joinLevel === null && level !== undefined && level !== "") {
+          joinLevel = level;
+        }
+      });
 
       rows.forEach(r => {
-        const levelStr = r["レベル"];
-        if (!levelStr && levelStr !== 0) return;
-        const level = parseInt(levelStr, 10);
-        if (!Number.isNaN(level) && joinLevel !== null && level < joinLevel) {
-          // 仲間加入前のレベルは表示しない
-          return;
-        }
+        const level = r["レベル"];
+        if (level === undefined || level === "") return;
+
+        // 加入前はスキップ
+        if (joinLevel !== null && Number(level) < Number(joinLevel)) return;
 
         const total = r[CHARACTER_CONFIG.expTotalColumn];
-        const next = r[CHARACTER_CONFIG.expNextColumn];
 
         const tr = document.createElement("tr");
 
         const tdLv = document.createElement("td");
-        tdLv.textContent = levelStr;
+        tdLv.textContent = level;
         tr.appendChild(tdLv);
 
         const tdTotal = document.createElement("td");
         tdTotal.textContent = isEmptyValue(total) ? "" : total;
         tr.appendChild(tdTotal);
-
-        const tdNext = document.createElement("td");
-        tdNext.textContent = isEmptyValue(next) ? "" : next;
-        tr.appendChild(tdNext);
 
         tbody.appendChild(tr);
       });
@@ -275,7 +258,7 @@ tbody tr:nth-child(even) {
       if (!tbody.hasChildNodes()) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 3;
+        td.colSpan = 2;
         td.className = "status-empty";
         td.textContent = "経験値データが見つかりませんでした。";
         tr.appendChild(td);
@@ -299,7 +282,7 @@ tbody tr:nth-child(even) {
           tbody1.innerHTML = "<tr><td colspan='8' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
         }
         if (tbody2) {
-          tbody2.innerHTML = "<tr><td colspan='3' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+          tbody2.innerHTML = "<tr><td colspan='2' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
         }
       }
     })();
