@@ -15,23 +15,51 @@
   }
   table.boss-sub-table th,
   table.boss-sub-table td {
-    border: 1px solid #666; /* 線を濃くする */
+    border: 1px solid #ccc;
     padding: 4px 6px;
-    font-size: 12px;
+    font-size: 0.9rem;
   }
   table.boss-sub-table th {
-    background: #f0f0f0;   /* ヘッダーだけ薄いグレー */
     text-align: center;
   }
-  /* 数値っぽい列は右寄せにして見やすく */
-  table.boss-sub-table td:nth-child(2),
-  table.boss-sub-table td:nth-child(3),
-  table.boss-sub-table td:nth-child(4),
-  table.boss-sub-table td:nth-child(5) {
+  table.boss-sub-table td {
+    text-align: left;
+  }
+
+  /* 追加ステータス用 */
+  section.boss-extra-status {
+    margin-top: 16px;
+  }
+  section.boss-extra-status h2 {
+    margin-bottom: 4px;
+    font-size: 1.1rem;
+  }
+  table.boss-stat-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 4px;
+  }
+  table.boss-stat-table th,
+  table.boss-stat-table td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    font-size: 0.9rem;
+  }
+  table.boss-stat-table th {
+    text-align: center;
+  }
+  table.boss-stat-table td {
     text-align: right;
   }
-</style>
-
+  table.boss-stat-table td:first-child {
+    text-align: left;
+  }
+  p.boss-reward {
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+  </style>
 </head>
 <body>
   <h1>DQI ボス詳細</h1>
@@ -39,111 +67,136 @@
   <div data-role="boss-detail"
        data-csv="dq1_boss_multiunit.csv"></div>
 
-  
-<h2>ボス耐性</h2>
-<p>◎…特に有効 ／ ○…有効 ／ △…やや効きにくい ／ ×…ほとんど効かない</p>
-<table id="boss-resistance-table" class="boss-sub-table">
-  <thead></thead>
-  <tbody>
-  </tbody>
-</table>
-
-<p><a href="dq1_boss_list.html">DQI ボス一覧に戻る</a></p>
+  <p><a href="dq1_boss_list.html">DQI ボス一覧に戻る</a></p>
 
   <script src="boss_pages.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    (function() {
-      const CSV_PATH = "dq1_boss_resistance.csv";
+  (function () {
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || "";
+    }
 
-      function getBossNameFromQuery() {
-        const params = new URLSearchParams(window.location.search);
-        return params.get("boss") || "";
-      }
-
-      function isEmptyValue(v) {
-        if (v === null || v === undefined) return true;
-        const s = String(v).trim();
-        return s === "" || s.toLowerCase() === "nan";
-      }
-
-      async function loadResistance() {
-        const bossName = getBossNameFromQuery();
-        const table = document.getElementById("boss-resistance-table");
-        if (!table) return;
-        const thead = table.querySelector("thead");
-        const tbody = table.querySelector("tbody");
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
-
-        if (!bossName) {
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 99;
-          td.textContent = "ボス戦名が指定されていません。";
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-          return;
+    function parseCsv(text) {
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      if (!lines.length) return [];
+      const header = lines[0].split(",");
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line || !line.trim()) continue;
+        const cols = line.split(",");
+        const obj = {};
+        for (let j = 0; j < header.length; j++) {
+          const key = header[j] || ("col" + j);
+          obj[key] = cols[j] !== undefined ? cols[j] : "";
         }
+        rows.push(obj);
+      }
+      return rows;
+    }
 
-        try {
-          const res = await fetch(CSV_PATH);
-          if (!res.ok) throw new Error("読み込み失敗");
-          const text = await res.text();
-          const parsed = Papa.parse(text, {
-            header: true,
-            skipEmptyLines: true,
+    function buildExtraStatus() {
+      const container = document.querySelector("[data-role='boss-detail']");
+      if (!container) return;
+      const bossName = getQueryParam("boss");
+      if (!bossName) return;
+
+      const csvPath = container.getAttribute("data-csv");
+      if (!csvPath) return;
+
+      fetch(csvPath)
+        .then(function (res) { return res.text(); })
+        .then(function (text) {
+          const rows = parseCsv(text);
+          const target = rows.filter(function (r) {
+            return (r["ボス戦名"] || "").trim() === bossName.trim();
           });
-          const rows = parsed.data;
+          if (!target.length) return;
 
-          const target = rows.filter(r => ((r["ボス戦名"] || "").trim() === bossName.trim()));
-          if (!target.length) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 99;
-            td.textContent = "このボスの耐性データは登録されていません。";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
+          // キー判定（MP/攻撃/防御/素早さは存在する場合のみ使う）
+          const sample = target[0];
+          const mpKey = sample.hasOwnProperty("MP") ? "MP"
+                       : sample.hasOwnProperty("ＭＰ") ? "ＭＰ" : null;
+          const atkKey = sample.hasOwnProperty("攻撃") ? "攻撃"
+                        : sample.hasOwnProperty("攻撃力") ? "攻撃力" : null;
+          const defKey = sample.hasOwnProperty("防御") ? "防御"
+                        : sample.hasOwnProperty("守備") ? "守備"
+                        : sample.hasOwnProperty("守備力") ? "守備力" : null;
+          const agiKey = sample.hasOwnProperty("素早さ") ? "素早さ"
+                        : sample.hasOwnProperty("すばやさ") ? "すばやさ" : null;
+
+          // すべて存在しないなら何も出さない
+          if (!mpKey && !atkKey && !defKey && !agiKey) {
             return;
           }
 
-          const allCols = Object.keys(target[0]);
-          const candidate = allCols.filter(c => c !== "ボス戦名");
-          const visible = candidate.filter(col =>
-            target.some(r => !isEmptyValue(r[col]))
-          );
+          const section = document.createElement("section");
+          section.className = "boss-extra-status";
 
+          const h2 = document.createElement("h2");
+          h2.textContent = "ステータス（補足）";
+          section.appendChild(h2);
+
+          const table = document.createElement("table");
+          table.className = "boss-stat-table";
+
+          const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
-          visible.forEach(col => {
+          ["個体名", "体数", "HP", "MP", "攻撃", "防御", "素早さ"].forEach(function (label) {
             const th = document.createElement("th");
-            th.textContent = col;
+            th.textContent = label;
             trHead.appendChild(th);
           });
           thead.appendChild(trHead);
+          table.appendChild(thead);
 
-          target.forEach(r => {
+          const tbody = document.createElement("tbody");
+
+          target.forEach(function (r) {
             const tr = document.createElement("tr");
-            visible.forEach(col => {
+            function addCell(value) {
               const td = document.createElement("td");
-              const v = r[col];
-              td.textContent = isEmptyValue(v) ? "" : v;
+              td.textContent = value || "";
               tr.appendChild(td);
-            });
+            }
+            addCell(r["個体名"] || "");
+            addCell(r["体数"] || "");
+            addCell(r["HP"] || "");
+            addCell(mpKey ? (r[mpKey] || "") : "");
+            addCell(atkKey ? (r[atkKey] || "") : "");
+            addCell(defKey ? (r[defKey] || "") : "");
+            addCell(agiKey ? (r[agiKey] || "") : "");
             tbody.appendChild(tr);
           });
-        } catch (e) {
-          console.error(e);
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 99;
-          td.textContent = "耐性データの読み込みに失敗しました。";
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-        }
-      }
 
-      document.addEventListener("DOMContentLoaded", loadResistance);
-    })();
+          table.appendChild(tbody);
+          section.appendChild(table);
+
+          // 経験値・ゴールドの補足（1行目のみ採用）
+          var rewardParts = [];
+          if (sample["経験値"]) rewardParts.push("経験値 " + sample["経験値"]);
+          if (sample["ゴールド"]) rewardParts.push("ゴールド " + sample["ゴールド"]);
+          if (rewardParts.length) {
+            const p = document.createElement("p");
+            p.className = "boss-reward";
+            p.textContent = "撃破時の報酬：" + rewardParts.join(" / ");
+            section.appendChild(p);
+          }
+
+          container.appendChild(section);
+        })
+        .catch(function (e) {
+          console.error(e);
+        });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", buildExtraStatus);
+    } else {
+      buildExtraStatus();
+    }
+  })();
   </script>
 </body>
 </html>
