@@ -7,9 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const tbody = table.querySelector('tbody');
   if (!tbody) return;
 
-  // ★ CSV のパス：実際に置いた場所に合わせて変更してください
-  // 例）csv フォルダ配下に置くなら: "./csv/dq1_experience value table.csv"
-  const csvPath = './csv/dq1_experience value table.csv';
+  // ★ CSV は HTML と同じ階層に置く想定
+  const csvPath = './dq1_experience value table.csv';
 
   fetch(csvPath)
     .then((res) => {
@@ -19,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return res.text();
     })
     .then((text) => {
-      const lines = text.trim().split(/\\r?\\n/);
+      const lines = text.trim().split(/\r?\n/);
 
       // ヘッダーだけだった場合
       if (lines.length <= 1) {
@@ -48,13 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
           exp = exp.slice(1, -1);
         }
 
-        // ★ exp が空でもそのままセルを作る → 画面上は空白
+        // exp が空でもセルは作る → 画面上は空白セル
         const tr = document.createElement('tr');
         const tdLv = document.createElement('td');
         const tdExp = document.createElement('td');
 
         tdLv.textContent = level;
-        tdExp.textContent = exp; // "" の場合は空白セル
+        tdExp.textContent = exp;
 
         tr.appendChild(tdLv);
         tr.appendChild(tdExp);
