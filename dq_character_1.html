@@ -29,6 +29,15 @@
       background: #f5f5f5;
       text-align: left;
     }
+    p.note {
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .status-empty {
+      text-align: center;
+      padding: 0.5rem 0;
+      color: #777;
+    }
   </style>
 </head>
 <body>
@@ -37,13 +46,36 @@
 
     <section class="character-block">
       <h1>DQ1主人公</h1>
+      <h2>初期ステータス（HD-2D版）</h2>
+      <p class="note">
+        ゲーム内の検証結果をもとにした初期レベルと能力値の一覧です。<br>
+        HP・MPは表には含めていませんが、目安として「HPはたいりょくの2倍」「MPはかしこさの2倍」と考えてください。
+      </p>
+      <table id="initial-stats-table" class="data-table">
+        <thead>
+          <tr>
+            <th>キャラ名</th>
+            <th>初期Lv</th>
+            <th>ちから</th>
+            <th>みのまもり</th>
+            <th>すばやさ</th>
+            <th>たいりょく</th>
+            <th>かしこさ</th>
+            <th>うんのよさ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="8" class="status-empty">読み込み中...</td></tr>
+        </tbody>
+      </table>
+
       <h2>レベル別経験値</h2>
       <table id="dq1-exp-table" class="data-table">
         <thead>
           <tr><th>Lv</th><th>累計</th></tr>
         </thead>
         <tbody>
-          <tr><td colspan="2">読み込み中...</td></tr>
+          <tr><td colspan="2" class="status-empty">読み込み中...</td></tr>
         </tbody>
       </table>
 
