@@ -47,7 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
           exp = exp.slice(1, -1);
         }
 
-        // exp が空でもセルは作る → 画面上は空白セル
+        // ★ exp が空欄の場合は行ごと表示しない（41以降など）
+        if (!exp) return;
+
         const tr = document.createElement('tr');
         const tdLv = document.createElement('td');
         const tdExp = document.createElement('td');
