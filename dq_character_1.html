@@ -136,6 +136,7 @@
   (function() {
     const EXP_CSV = "dq1_experience%20value%20table.csv";
     const ABILITY_CSV = "dq_data_ability.csv";
+    const INITIAL_CSV = "dq_Initial%20value.csv";
     const ABILITY_KEY = "DQ1主人公";
 
 function parseCsv(text) {
@@ -155,6 +156,49 @@ function parseCsv(text) {
     return obj;
   });
 };
+
+function fillInitialStats(rows) {
+  const tbody = document.querySelector("#initial-stats-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const target = rows.find(function(r) {
+    return (r["キャラ名"] || "").trim() === ABILITY_KEY;
+  });
+
+  if (!target) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 8;
+    td.className = "status-empty";
+    td.textContent = "初期ステータスデータが見つかりませんでした。";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const tr = document.createElement("tr");
+  function appendCell(key, fromCsv) {
+    const td = document.createElement("td");
+    if (fromCsv) {
+      td.textContent = target[key] ?? "";
+    } else {
+      td.textContent = key;
+    }
+    tr.appendChild(td);
+  }
+
+  appendCell("DQ1主人公", false);
+  appendCell("初期レベル", true);
+  appendCell("ちから", true);
+  appendCell("みのまもり", true);
+  appendCell("すばやさ", true);
+  appendCell("たいりょく", true);
+  appendCell("かしこさ", true);
+  appendCell("うんのよさ", true);
+
+  tbody.appendChild(tr);
+}
 
 function fillTable(expRows, abilityRows) {
       const tbody = document.querySelector("#dq1-exp-table tbody");
@@ -215,29 +259,39 @@ function fillTable(expRows, abilityRows) {
       }
     }
 
-    Promise.all([
-      fetch(EXP_CSV).then(function(res) {
-        if (!res.ok) throw new Error("dq1_experience value table.csv 読み込み失敗");
-        return res.text();
-      }),
-      fetch(ABILITY_CSV).then(function(res) {
-        if (!res.ok) throw new Error("dq_data_ability.csv 読み込み失敗");
-        return res.text();
-      })
-    ])
-    .then(function(results) {
-      const expRows = parseCsv(results[0]);
-      const abilityRows = parseCsv(results[1]);
-      fillTable(expRows, abilityRows);
+      Promise.all([
+    fetch(EXP_CSV).then(function(res) {
+      if (!res.ok) throw new Error("dq1_experience value table.csv 読み込み失敗");
+      return res.text();
+    }),
+    fetch(ABILITY_CSV).then(function(res) {
+      if (!res.ok) throw new Error("dq_data_ability.csv 読み込み失敗");
+      return res.text();
+    }),
+    fetch(INITIAL_CSV).then(function(res) {
+      if (!res.ok) throw new Error("dq_Initial value.csv 読み込み失敗");
+      return res.text();
     })
-    .catch(function(e) {
-      console.error(e);
-      const tbody = document.querySelector("#dq1-exp-table tbody");
-      if (tbody) {
-        tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
-      }
-    });
-  })();
+  ])
+  .then(function(results) {
+    const expRows = parseCsv(results[0]);
+    const abilityRows = parseCsv(results[1]);
+    const initialRows = parseCsv(results[2]);
+    fillInitialStats(initialRows);
+    fillTable(expRows, abilityRows);
+  })
+  .catch(function(e) {
+    console.error(e);
+    const expTbody = document.querySelector("#dq1-exp-table tbody");
+    if (expTbody) {
+      expTbody.innerHTML = "<tr><td colspan='5' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+    }
+    const initTbody = document.querySelector("#initial-stats-table tbody");
+    if (initTbody) {
+      initTbody.innerHTML = "<tr><td colspan='8' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+    }
+  });
+})();
 </script>
 </body>
 </html>
