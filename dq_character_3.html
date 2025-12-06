@@ -132,37 +132,20 @@ tbody tr:nth-child(even) {
         ・下限超～上限未満：0.9～1.1倍ダメージ<br>
         ・運上限以上：1.1～1.2倍ダメージ
       </p>
-      <div class="table-flex">
-        <div class="table-block">
-          <table id="exp-table">
-            <thead>
-              <tr>
-                <th>Lv</th>
-                <th>累計</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="2" class="status-empty">読み込み中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-block">
-          <h3>レベル別運基準</h3>
-          <table id="luck-table">
-            <thead>
-              <tr>
-                <th>Lv</th>
-                <th>運基準</th>
-                <th>運下限</th>
-                <th>運上限</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="4" class="status-empty">読み込み中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <table id="exp-table">
+        <thead>
+          <tr>
+            <th>Lv</th>
+            <th>累計</th>
+            <th>運基準</th>
+            <th>運下限</th>
+            <th>運上限</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="status-empty">読み込み中...</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <section id="skills-section">
@@ -261,13 +244,22 @@ tbody tr:nth-child(even) {
       tbody.appendChild(tr);
     }
 
-    function fillExpTable(rows) {
+    function fillExpTable(expRows, abilityRows) {
       const tbody = document.querySelector("#exp-table tbody");
       tbody.innerHTML = "";
 
+      // 対象キャラの運基準データをレベル別にまとめる
+      const luckRows = (abilityRows || []).filter(r => (r["キャラ名"] || "").trim() === CHARACTER_CONFIG.abilityKey);
+      const luckByLevel = {};
+      luckRows.forEach(r => {
+        const lv = String(r["レベル"] || "").trim();
+        if (!lv) return;
+        luckByLevel[lv] = r;
+      });
+
       // 加入レベル（最初に累計が入る行）を特定
       let joinLevel = null;
-      rows.forEach(r => {
+      expRows.forEach(r => {
         const total = r[CHARACTER_CONFIG.expTotalColumn];
         const level = r["レベル"];
         if (!isEmptyValue(total) && joinLevel === null && level !== undefined && level !== "") {
@@ -275,7 +267,7 @@ tbody tr:nth-child(even) {
         }
       });
 
-      rows.forEach(r => {
+      expRows.forEach(r => {
         const level = r["レベル"];
         if (level === undefined || level === "") return;
 
@@ -286,13 +278,29 @@ tbody tr:nth-child(even) {
 
         const tr = document.createElement("tr");
 
+        // Lv
         const tdLv = document.createElement("td");
         tdLv.textContent = level;
         tr.appendChild(tdLv);
 
+        // 累計
         const tdTotal = document.createElement("td");
         tdTotal.textContent = isEmptyValue(total) ? "" : total;
         tr.appendChild(tdTotal);
+
+        // 運系（なければ空欄）
+        const luck = luckByLevel[String(level).trim()] || {};
+        const tdLuckBase = document.createElement("td");
+        tdLuckBase.textContent = luck["運基準"] ?? "";
+        tr.appendChild(tdLuckBase);
+
+        const tdLuckMin = document.createElement("td");
+        tdLuckMin.textContent = luck["運下限"] ?? "";
+        tr.appendChild(tdLuckMin);
+
+        const tdLuckMax = document.createElement("td");
+        tdLuckMax.textContent = luck["運上限"] ?? "";
+        tr.appendChild(tdLuckMax);
 
         tbody.appendChild(tr);
       });
@@ -300,7 +308,7 @@ tbody tr:nth-child(even) {
       if (!tbody.hasChildNodes()) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 2;
+        td.colSpan = 5;
         td.className = "status-empty";
         td.textContent = "経験値データが見つかりませんでした。";
         tr.appendChild(td);
@@ -354,21 +362,16 @@ tbody tr:nth-child(even) {
           loadCsv("dq_data_ability.csv"),
         ]);
         fillInitialStats(initialRows);
-        fillExpTable(expRows);
-        fillLuckTable(abilityRows);
+        fillExpTable(expRows, abilityRows);
       } catch (e) {
         console.error(e);
         const tbody1 = document.querySelector("#initial-stats-table tbody");
         const tbody2 = document.querySelector("#exp-table tbody");
-        const tbody3 = document.querySelector("#luck-table tbody");
         if (tbody1) {
           tbody1.innerHTML = "<tr><td colspan='8' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
         }
         if (tbody2) {
-          tbody2.innerHTML = "<tr><td colspan='2' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
-        }
-        if (tbody3) {
-          tbody3.innerHTML = "<tr><td colspan='4' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+          tbody2.innerHTML = "<tr><td colspan='5' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
         }
       }
     })();
