@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>DQ2 呪文・特技検索 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  background-color: #f7f2e9; /* トップページと同系統の薄いオレンジ系 */
+  color: #333;
+}
+a {
+  color: #1f5faa;
+}
+header h1, h1 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #d4b27c;
+  padding-bottom: 0.25rem;
+}
+h2 {
+  font-size: 1.2rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-left: 4px solid #d4b27c;
+  padding-left: 0.5rem;
+}
+nav {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+nav a {
+  margin-right: 8px;
+}
+p.note, .legend {
+  font-size: 0.85rem;
+  color: #555;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  background-color: #f2e7d7;
+}
+tbody tr:nth-child(odd) {
+  background-color: #fbf7f0;
+}
+tbody tr:nth-child(even) {
+  background-color: #fdfaf5;
+}
+.status-empty {
+  text-align: center;
+  padding: 8px 0;
+  color: #777;
+}
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+  header h1, h1 {
+    font-size: 1.3rem;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DQ2 呪文・特技検索</h1>
+  </header>
+  <nav>
+    <a href="./index.html">&laquo; トップページに戻る</a>
+  </nav>
+
+  <p class="note">
+    DQ2キャラクターについて、レベルや呪文・特技名から情報を検索できます。<br>
+    データは <code>dq_character.csv</code> / <code>dq2_experience value table.csv</code> / <code>dq_data_ability.csv</code> を利用しています。
+  </p>
+
+  <section id="lv-search-section">
+    <h2>レベル指定で検索（キャラ別）</h2>
+    <p class="note">
+      キャラクターとレベルを指定すると、そのレベルの累計経験値・運基準（運下限／運上限）と、
+      そのレベルで新たに習得する呪文・特技（あれば）を表示します。
+    </p>
+    <div class="search-form" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+      <label>キャラクター<br>
+        <select id="lv-search-character">
+          <option value="">選択してください</option>
+        </select>
+      </label>
+      <label>レベル<br>
+        <input type="number" id="lv-search-level" min="1" max="99" style="width: 6rem;">
+      </label>
+      <button id="lv-search-button">検索</button>
+    </div>
+    <table id="lv-search-result" class="data-table">
+      <thead>
+        <tr>
+          <th>キャラ</th>
+          <th>Lv</th>
+          <th>経験値（累計）</th>
+          <th>運基準</th>
+          <th>運下限</th>
+          <th>運上限</th>
+          <th>習得呪文</th>
+          <th>習得特技</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="8" class="status-empty">キャラクターとレベルを指定して検索してください。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="spell-search-section">
+    <h2>呪文・特技名で検索（DQ2全キャラ）</h2>
+    <p class="note">
+      呪文名・特技名の一部を入力すると、DQ2の全キャラから該当するものを検索します。<br>
+      ヒットした結果には、習得レベル・累計経験値・運基準（運下限／運上限）もあわせて表示します。
+    </p>
+    <div class="search-form" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+      <label>キーワード（呪文・特技名）<br>
+        <input type="text" id="spell-keyword" style="min-width: 12rem;">
+      </label>
+      <label>種別<br>
+        <select id="spell-kind">
+          <option value="all">呪文＋特技</option>
+          <option value="spell">呪文のみ</option>
+          <option value="skill">特技のみ</option>
+        </select>
+      </label>
+      <label>キャラクター<br>
+        <select id="spell-character">
+          <option value="">全キャラ（DQ2）</option>
+        </select>
+      </label>
+      <button id="spell-search-button">検索</button>
+    </div>
+    <table id="spell-search-result" class="data-table">
+      <thead>
+        <tr>
+          <th>種別</th>
+          <th>名前</th>
+          <th>キャラ</th>
+          <th>Lv</th>
+          <th>経験値（累計）</th>
+          <th>運基準</th>
+          <th>運下限</th>
+          <th>運上限</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="8" class="status-empty">キーワードを入力して検索してください。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    // CSV読み込みのユーティリティ
+    function loadCsv(url) {
+      return new Promise(function(resolve, reject) {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: 'greedy',
+          complete: function(results) {
+            const rows = (results.data || []).filter(function(row) {
+              // 完全な空行は除外
+              return Object.values(row).some(function(v) { return v !== null && String(v).trim() !== ""; });
+            });
+            resolve(rows);
+          },
+          error: function(err) { reject(err); }
+        });
+      });
+    }
+
+    // 経験値マップ作成: expMap[キャラ名][レベル] = 累計経験値
+    function buildExpMap(expRows) {
+      const map = {};
+      expRows.forEach(function(row) {
+        const level = String(row["レベル"] || "").trim();
+        if (!level) return;
+        Object.keys(row).forEach(function(key) {
+          if (key === "レベル") return;
+          if (key.indexOf("次レベルまで") !== -1) return; // 「次レベルまで」は除外
+          const charName = String(key || "").trim();
+          if (!charName) return;
+          const val = String(row[key] || "").trim();
+          if (!map[charName]) map[charName] = {};
+          if (val !== "") map[charName][level] = val;
+        });
+      });
+      return map;
+    }
+
+    // 運マップ作成: luckMap[能力用キャラキー][レベル] = {{ base, min, max }}
+    function buildLuckMap(abilityRows) {
+      const map = {};
+      abilityRows.forEach(function(row) {
+        const key = String(row["キャラ名"] || "").trim();
+        const level = String(row["レベル"] || "").trim();
+        if (!key || !level) return;
+        if (!map[key]) map[key] = {};
+        map[key][level] = {
+          base: String(row["運基準"] || "").trim(),
+          min: String(row["運下限"] || "").trim(),
+          max: String(row["運上限"] || "").trim()
+        };
+      });
+      return map;
+    }
+
+    // 表示名 → 能力用キャラキー の対応
+    const CHAR_TO_ABILITY_KEY = {
+      "DQ2ローレシア王子": "DQ2ローレ",
+      "DQ2サマルトリア王子": "DQ2サマル王子",
+      "DQ2ムーンブルク王女": "DQ2ムーン",
+      "DQ2サマルトリア王女": "DQ2サマル王女"
+    };
+
+    function getExp(expMap, charName, level) {
+      const lv = String(level);
+      const charMap = expMap[charName];
+      if (!charMap) return "";
+      return charMap[lv] || "";
+    }
+
+    function getLuck(luckMap, charName, level) {
+      const abilityKey = CHAR_TO_ABILITY_KEY[charName];
+      if (!abilityKey) return { base: "", min: "", max: "" };
+      const byLevel = luckMap[abilityKey] || {};
+      const row = byLevel[String(level)];
+      if (!row) return { base: "", min: "", max: "" };
+      return row;
+    }
+
+    function setupLvSearch(dq2CharRows, expMap, luckMap, characterList) {
+      const charSelect = document.getElementById("lv-search-character");
+      const levelInput = document.getElementById("lv-search-level");
+      const button = document.getElementById("lv-search-button");
+      const tbody = document.querySelector("#lv-search-result tbody");
+
+      // セレクトにキャラを追加
+      characterList.forEach(function(name) {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        charSelect.appendChild(opt);
+      });
+
+      function renderMessage(msg) {
+        tbody.innerHTML = "";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.className = "status-empty";
+        td.textContent = msg;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      function onSearch() {
+        const charName = String(charSelect.value || "").trim();
+        const levelStr = String(levelInput.value || "").trim();
+
+        if (!charName || !levelStr) {
+          renderMessage("キャラクターとレベルを指定してください。");
+          return;
+        }
+
+        const lv = Number(levelStr);
+        if (!Number.isFinite(lv) || lv <= 0) {
+          renderMessage("レベルは1以上の数値で入力してください。");
+          return;
+        }
+
+        // 呪文・特技（そのレベルで新しく覚えるもの）
+        const rowsAtLevel = dq2CharRows.filter(function(r) {
+          return String(r["キャラ名"] || "").trim() === charName &&
+                 Number(r["Lv"] || 0) === lv;
+        });
+
+        let spellText = "";
+        let skillText = "";
+        if (rowsAtLevel.length > 0) {
+          const r = rowsAtLevel[0];
+          spellText = String(r["呪文"] || "").trim();
+          skillText = String(r["特技"] || "").trim();
+        }
+
+        const expVal = getExp(expMap, charName, lv);
+        const luck = getLuck(luckMap, charName, lv);
+
+        tbody.innerHTML = "";
+        const tr = document.createElement("tr");
+
+        function appendCell(text) {
+          const td = document.createElement("td");
+          td.textContent = text;
+          tr.appendChild(td);
+        }
+
+        appendCell(charName);
+        appendCell(lv);
+        appendCell(expVal || "");
+        appendCell(luck.base || "");
+        appendCell(luck.min || "");
+        appendCell(luck.max || "");
+        appendCell(spellText || "");
+        appendCell(skillText || "");
+
+        tbody.appendChild(tr);
+      }
+
+      button.addEventListener("click", onSearch);
+      levelInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          onSearch();
+        }
+      });
+    }
+
+    function setupSpellSearch(dq2CharRows, expMap, luckMap, characterList) {
+      const keywordInput = document.getElementById("spell-keyword");
+      const kindSelect = document.getElementById("spell-kind");
+      const charSelect = document.getElementById("spell-character");
+      const button = document.getElementById("spell-search-button");
+      const tbody = document.querySelector("#spell-search-result tbody");
+
+      // キャラセレクトに追加
+      characterList.forEach(function(name) {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        charSelect.appendChild(opt);
+      });
+
+      function renderMessage(msg) {
+        tbody.innerHTML = "";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.className = "status-empty";
+        td.textContent = msg;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      function onSearch() {
+        const keyword = String(keywordInput.value || "").trim();
+        if (!keyword) {
+          renderMessage("キーワードを入力してください。");
+          return;
+        }
+
+        const kindFilter = kindSelect.value; // all / spell / skill
+        const charFilter = String(charSelect.value || "").trim();
+
+        const results = [];
+
+        dq2CharRows.forEach(function(row) {
+          const charName = String(row["キャラ名"] || "").trim();
+          if (charFilter && charName !== charFilter) return;
+
+          const levelStr = String(row["Lv"] || "").trim();
+          const lv = Number(levelStr || "0");
+          if (!Number.isFinite(lv) || lv <= 0) return;
+
+          // 呪文列・特技列を1セル内の「、」区切りで分解して検索
+          [["呪文", "spell"], ["特技", "skill"]].forEach(function(pair) {
+            const colName = pair[0];
+            const kind = pair[1];
+
+            if (kindFilter === "spell" && kind !== "spell") return;
+            if (kindFilter === "skill" && kind !== "skill") return;
+
+            const raw = String(row[colName] || "").trim();
+            if (!raw) return;
+
+            const tokens = raw.split("、").map(function(t) { return t.trim(); }).filter(function(t) { return t.length > 0; });
+            tokens.forEach(function(name) {
+              if (name.indexOf(keyword) !== -1) {
+                results.push({
+                  kind: (kind === "spell" ? "呪文" : "特技"),
+                  name: name,
+                  charName: charName,
+                  level: lv
+                });
+              }
+            });
+          });
+        });
+
+        if (results.length === 0) {
+          renderMessage("該当する呪文・特技が見つかりませんでした。");
+          return;
+        }
+
+        // レベル昇順 → キャラ名 → 種別 → 名前 でソート
+        results.sort(function(a, b) {
+          if (a.level !== b.level) return a.level - b.level;
+          if (a.charName !== b.charName) return a.charName.localeCompare(b.charName, "ja");
+          if (a.kind !== b.kind) return a.kind.localeCompare(b.kind, "ja");
+          return a.name.localeCompare(b.name, "ja");
+        });
+
+        tbody.innerHTML = "";
+
+        results.forEach(function(item) {
+          const expVal = getExp(expMap, item.charName, item.level);
+          const luck = getLuck(luckMap, item.charName, item.level);
+
+          const tr = document.createElement("tr");
+
+          function appendCell(text) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            tr.appendChild(td);
+          }
+
+          appendCell(item.kind);
+          appendCell(item.name);
+          appendCell(item.charName);
+          appendCell(item.level);
+          appendCell(expVal || "");
+          appendCell(luck.base || "");
+          appendCell(luck.min || "");
+          appendCell(luck.max || "");
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      button.addEventListener("click", onSearch);
+      keywordInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          onSearch();
+        }
+      });
+    }
+
+    (function init() {
+      const lvTbody = document.querySelector("#lv-search-result tbody");
+      const spellTbody = document.querySelector("#spell-search-result tbody");
+
+      Promise.all([
+        loadCsv("dq_character.csv"),
+        loadCsv("dq2_experience%20value%20table.csv"),
+        loadCsv("dq_data_ability.csv")
+      ]).then(function(results) {
+        const characterRows = results[0] || [];
+        const expRows = results[1] || [];
+        const abilityRows = results[2] || [];
+
+        // DQ2キャラだけを対象にする
+        const dq2CharRows = characterRows.filter(function(r) {
+          const name = String(r["キャラ名"] || "").trim();
+          return name.indexOf("DQ2") === 0;
+        });
+
+        // キャラ一覧（重複除去）
+        const characterSet = new Set();
+        dq2CharRows.forEach(function(r) {
+          const name = String(r["キャラ名"] || "").trim();
+          if (name) characterSet.add(name);
+        });
+        const characterList = Array.from(characterSet).sort(function(a, b) {
+          return a.localeCompare(b, "ja");
+        });
+
+        const expMap = buildExpMap(expRows);
+        const luckMap = buildLuckMap(abilityRows);
+
+        setupLvSearch(dq2CharRows, expMap, luckMap, characterList);
+        setupSpellSearch(dq2CharRows, expMap, luckMap, characterList);
+      }).catch(function(e) {
+        console.error(e);
+        if (lvTbody) {
+          lvTbody.innerHTML = "<tr><td colspan='8' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+        }
+        if (spellTbody) {
+          spellTbody.innerHTML = "<tr><td colspan='8' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
