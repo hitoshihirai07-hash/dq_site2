@@ -138,22 +138,25 @@
     const ABILITY_CSV = "dq_data_ability.csv";
     const ABILITY_KEY = "DQ1主人公";
 
-    function parseCsv(text) {
-      const lines = text.trim().split(/?
-/);
-      if (lines.length <= 1) return [];
-      const headers = lines[0].split(",");
-      return lines.slice(1).map(function(line) {
-        const cols = line.split(",");
-        const obj = {};
-        headers.forEach(function(h, idx) {
-          obj[h] = (cols[idx] || "").trim();
-        });
-        return obj;
-      });
-    }
+function parseCsv(text) {
+  const NL = String.fromCharCode(10);
+  const CR = String.fromCharCode(13);
+  const rawLines = text.trim().split(NL);
+  if (rawLines.length <= 1) return [];
+  const headerLine = rawLines[0].replace(CR, "");
+  const headers = headerLine.split(",");
+  return rawLines.slice(1).map(function(line) {
+    const clean = line.replace(CR, "");
+    const cols = clean.split(",");
+    const obj = {};
+    headers.forEach(function(h, idx) {
+      obj[h] = (cols[idx] || "").trim();
+    });
+    return obj;
+  });
+};
 
-    function fillTable(expRows, abilityRows) {
+function fillTable(expRows, abilityRows) {
       const tbody = document.querySelector("#dq1-exp-table tbody");
       if (!tbody) return;
       tbody.innerHTML = "";
