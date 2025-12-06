@@ -132,112 +132,109 @@
     <p><a href="dq_character.html">&larr; キャラクター情報に戻る</a></p>
     <p><a href="index.html">&larr; トップページに戻る</a></p>
   </main>
-  <script src="./dq1_experience.js"></script>
   <script>
-    (function() {
-      const ABILITY_KEY = "DQ1主人公";
+  (function() {
+    const EXP_CSV = "dq1_experience%20value%20table.csv";
+    const ABILITY_CSV = "dq_data_ability.csv";
+    const ABILITY_KEY = "DQ1主人公";
 
-      function parseCsv(text) {
-        const lines = text.trim().split(/?
+    function parseCsv(text) {
+      const lines = text.trim().split(/?
 /);
-        if (lines.length <= 1) return [];
-        const headers = lines[0].split(",");
-        return lines.slice(1).map(function(line) {
-          const cols = line.split(",");
-          const obj = {};
-          headers.forEach(function(h, idx) {
-            obj[h] = (cols[idx] || "").trim();
-          });
-          return obj;
+      if (lines.length <= 1) return [];
+      const headers = lines[0].split(",");
+      return lines.slice(1).map(function(line) {
+        const cols = line.split(",");
+        const obj = {};
+        headers.forEach(function(h, idx) {
+          obj[h] = (cols[idx] || "").trim();
         });
-      }
+        return obj;
+      });
+    }
 
-      function buildLuckMap(rows) {
-        const filtered = rows.filter(function(r) {
-          return (r["キャラ名"] || "").trim() === ABILITY_KEY;
-        });
-        const map = {};
-        filtered.forEach(function(r) {
-          const lv = String(r["レベル"] || "").trim();
-          if (!lv) return;
-          map[lv] = r;
-        });
-        return map;
-      }
+    function fillTable(expRows, abilityRows) {
+      const tbody = document.querySelector("#dq1-exp-table tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
 
-      function applyLuckToExpTable(luckMap) {
-        const table = document.getElementById("dq1-exp-table");
-        if (!table) return;
-        const tbody = table.querySelector("tbody");
-        if (!tbody) return;
+      // 対象キャラの運基準データをレベル別にまとめる
+      const luckRows = (abilityRows || []).filter(function(r) {
+        return (r["キャラ名"] || "").trim() === ABILITY_KEY;
+      });
+      const luckByLevel = {};
+      luckRows.forEach(function(r) {
+        const lv = String(r["レベル"] || "").trim();
+        if (!lv) return;
+        luckByLevel[lv] = r;
+      });
 
-        Array.from(tbody.rows).forEach(function(tr) {
-          const cells = tr.cells;
-          if (!cells || cells.length === 0) return;
+      expRows.forEach(function(r) {
+        const level = String(r["レベル"] || "").trim();
+        if (!level) return;
 
-          const lvText = String(cells[0].textContent || "").trim();
-          if (!lvText || lvText === "Lv") return;
+        const total = r["DQ1主人公"];
 
-          // 既存の2列（Lv, 累計）はそのままにして、運系3列を追加／更新
-          while (tr.cells.length < 5) {
-            tr.appendChild(document.createElement("td"));
-          }
+        const tr = document.createElement("tr");
 
-          const luck = luckMap[lvText] || {};
-          tr.cells[2].textContent = luck["運基準"] ?? "";
-          tr.cells[3].textContent = luck["運下限"] ?? "";
-          tr.cells[4].textContent = luck["運上限"] ?? "";
-        });
+        // Lv
+        const tdLv = document.createElement("td");
+        tdLv.textContent = level;
+        tr.appendChild(tdLv);
 
-        // データがない場合のメッセージ処理（念のため）
-        if (!tbody.hasChildNodes()) {
-          const tr = document.createElement("tr");
+        // 累計
+        const tdTotal = document.createElement("td");
+        tdTotal.textContent = total || "";
+        tr.appendChild(tdTotal);
+
+        // 運系（なければ空欄）
+        const luck = luckByLevel[level] || {};
+        function appendLuck(key) {
           const td = document.createElement("td");
-          td.colSpan = 5;
-          td.className = "status-empty";
-          td.textContent = "経験値データが見つかりませんでした。";
+          td.textContent = luck[key] ?? "";
           tr.appendChild(td);
-          tbody.appendChild(tr);
         }
+        appendLuck("運基準");
+        appendLuck("運下限");
+        appendLuck("運上限");
+
+        tbody.appendChild(tr);
+      });
+
+      if (!tbody.hasChildNodes()) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "status-empty";
+        td.textContent = "経験値データが見つかりませんでした。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
       }
+    }
 
-      function setupObserver(luckMap) {
-        const table = document.getElementById("dq1-exp-table");
-        if (!table) return;
-        const tbody = table.querySelector("tbody");
-        if (!tbody) return;
-
-        const observer = new MutationObserver(function() {
-          applyLuckToExpTable(luckMap);
-        });
-
-        observer.observe(tbody, { childList: true, subtree: false });
-
-        // 念のため初回も実行
-        applyLuckToExpTable(luckMap);
+    Promise.all([
+      fetch(EXP_CSV).then(function(res) {
+        if (!res.ok) throw new Error("dq1_experience value table.csv 読み込み失敗");
+        return res.text();
+      }),
+      fetch(ABILITY_CSV).then(function(res) {
+        if (!res.ok) throw new Error("dq_data_ability.csv 読み込み失敗");
+        return res.text();
+      })
+    ])
+    .then(function(results) {
+      const expRows = parseCsv(results[0]);
+      const abilityRows = parseCsv(results[1]);
+      fillTable(expRows, abilityRows);
+    })
+    .catch(function(e) {
+      console.error(e);
+      const tbody = document.querySelector("#dq1-exp-table tbody");
+      if (tbody) {
+        tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
       }
-
-      fetch("dq_data_ability.csv")
-        .then(function(res) {
-          if (!res.ok) throw new Error("dq_data_ability.csv 読み込み失敗");
-          return res.text();
-        })
-        .then(function(text) {
-          const rows = parseCsv(text);
-          const luckMap = buildLuckMap(rows);
-          setupObserver(luckMap);
-        })
-        .catch(function(e) {
-          console.error(e);
-          const table = document.getElementById("dq1-exp-table");
-          if (table) {
-            const tbody = table.querySelector("tbody");
-            if (tbody) {
-              tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>運基準データの読み込みに失敗しました。</td></tr>";
-            }
-          }
-        });
-    })();
-  </script>
+    });
+  })();
+</script>
 </body>
 </html>
