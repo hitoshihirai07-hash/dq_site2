@@ -254,6 +254,11 @@ tbody tr:nth-child(even) {
       joinLevel = level;
     }
   });
+  // DQ2ローレ（主人公）の場合は、加入レベルを1として扱う（Lv1は経験値が空欄でも表示したい）
+  if (CHARACTER_CONFIG.abilityKey === "DQ2ローレ") {
+    joinLevel = 1;
+  }
+
 
   // 経験値データをレベル別にまとめる
   const expByLevel = {};
