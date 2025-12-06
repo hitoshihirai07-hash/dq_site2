@@ -78,42 +78,29 @@
       </table>
 
       <h2>レベル別経験値</h2>
-      <div class="table-flex">
-        <div class="table-block">
-          <table id="dq1-exp-table" class="data-table">
-            <thead>
-              <tr><th>Lv</th><th>累計</th></tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="2" class="status-empty">読み込み中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-block">
-          <h3>レベル別運基準</h3>
-          <table id="luck-table" class="data-table">
-            <thead>
-              <tr>
-                <th>Lv</th>
-                <th>運基準</th>
-                <th>運下限</th>
-                <th>運上限</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="4" class="status-empty">読み込み中...</td></tr>
-            </tbody>
-          </table>
-          <p class="note">
-            運基準とダメージ倍率の関係は次の通りです。<br>
-            ・運下限以下：0.8～0.9倍ダメージ<br>
-            ・下限超～上限未満：0.9～1.1倍ダメージ<br>
-            ・運上限以上：1.1～1.2倍ダメージ
-          </p>
-        </div>
-      </div>
+<p class="note">
+  経験値テーブルとあわせて、各レベルごとの運基準（運基準／運下限／運上限）も掲載しています。<br>
+  ・運下限以下：0.8～0.9倍ダメージ<br>
+  ・下限超～上限未満：0.9～1.1倍ダメージ<br>
+  ・運上限以上：1.1～1.2倍ダメージ
+</p>
+<table id="dq1-exp-table" class="data-table">
+  <thead>
+    <tr>
+      <th>Lv</th>
+      <th>累計</th>
+      <th>運基準</th>
+      <th>運下限</th>
+      <th>運上限</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="5" class="status-empty">読み込み中...</td></tr>
+  </tbody>
+</table>
 
-      <h2>習得呪文・特技</h2>
+<h2>習得呪文・特技</h2>
+
       <table class="data-table">
         <thead>
           <tr><th>Lv</th><th>呪文</th><th>特技</th></tr>
@@ -151,7 +138,8 @@
       const ABILITY_KEY = "DQ1主人公";
 
       function parseCsv(text) {
-        const lines = text.trim().split(/\r?\n/);
+        const lines = text.trim().split(/?
+/);
         if (lines.length <= 1) return [];
         const headers = lines[0].split(",");
         return lines.slice(1).map(function(line) {
@@ -164,45 +152,69 @@
         });
       }
 
-      function fillLuckTable(rows) {
-        const tbody = document.querySelector("#luck-table tbody");
-        if (!tbody) return;
-        tbody.innerHTML = "";
-
+      function buildLuckMap(rows) {
         const filtered = rows.filter(function(r) {
           return (r["キャラ名"] || "").trim() === ABILITY_KEY;
         });
+        const map = {};
+        filtered.forEach(function(r) {
+          const lv = String(r["レベル"] || "").trim();
+          if (!lv) return;
+          map[lv] = r;
+        });
+        return map;
+      }
 
-        if (filtered.length === 0) {
+      function applyLuckToExpTable(luckMap) {
+        const table = document.getElementById("dq1-exp-table");
+        if (!table) return;
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+
+        Array.from(tbody.rows).forEach(function(tr) {
+          const cells = tr.cells;
+          if (!cells || cells.length === 0) return;
+
+          const lvText = String(cells[0].textContent || "").trim();
+          if (!lvText || lvText === "Lv") return;
+
+          // 既存の2列（Lv, 累計）はそのままにして、運系3列を追加／更新
+          while (tr.cells.length < 5) {
+            tr.appendChild(document.createElement("td"));
+          }
+
+          const luck = luckMap[lvText] || {};
+          tr.cells[2].textContent = luck["運基準"] ?? "";
+          tr.cells[3].textContent = luck["運下限"] ?? "";
+          tr.cells[4].textContent = luck["運上限"] ?? "";
+        });
+
+        // データがない場合のメッセージ処理（念のため）
+        if (!tbody.hasChildNodes()) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 4;
+          td.colSpan = 5;
           td.className = "status-empty";
-          td.textContent = "運基準データが見つかりませんでした。";
+          td.textContent = "経験値データが見つかりませんでした。";
           tr.appendChild(td);
           tbody.appendChild(tr);
-          return;
         }
+      }
 
-        filtered.sort(function(a, b) {
-          const la = Number(a["レベル"] || 0);
-          const lb = Number(b["レベル"] || 0);
-          return la - lb;
+      function setupObserver(luckMap) {
+        const table = document.getElementById("dq1-exp-table");
+        if (!table) return;
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+
+        const observer = new MutationObserver(function() {
+          applyLuckToExpTable(luckMap);
         });
 
-        filtered.forEach(function(r) {
-          const tr = document.createElement("tr");
-          function append(key) {
-            const td = document.createElement("td");
-            td.textContent = r[key] ?? "";
-            tr.appendChild(td);
-          }
-          append("レベル");
-          append("運基準");
-          append("運下限");
-          append("運上限");
-          tbody.appendChild(tr);
-        });
+        observer.observe(tbody, { childList: true, subtree: false });
+
+        // 念のため初回も実行
+        applyLuckToExpTable(luckMap);
       }
 
       fetch("dq_data_ability.csv")
@@ -212,13 +224,17 @@
         })
         .then(function(text) {
           const rows = parseCsv(text);
-          fillLuckTable(rows);
+          const luckMap = buildLuckMap(rows);
+          setupObserver(luckMap);
         })
         .catch(function(e) {
           console.error(e);
-          const tbody = document.querySelector("#luck-table tbody");
-          if (tbody) {
-            tbody.innerHTML = "<tr><td colspan='4' class='status-empty'>運基準データの読み込みに失敗しました。</td></tr>";
+          const table = document.getElementById("dq1-exp-table");
+          if (table) {
+            const tbody = table.querySelector("tbody");
+            if (tbody) {
+              tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>運基準データの読み込みに失敗しました。</td></tr>";
+            }
           }
         });
     })();
