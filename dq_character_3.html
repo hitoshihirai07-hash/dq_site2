@@ -245,76 +245,97 @@ tbody tr:nth-child(even) {
     }
 
     function fillExpTable(expRows, abilityRows) {
-      const tbody = document.querySelector("#exp-table tbody");
-      tbody.innerHTML = "";
+  const tbody = document.querySelector("#exp-table tbody");
+  tbody.innerHTML = "";
 
-      // 対象キャラの運基準データをレベル別にまとめる
-      const luckRows = (abilityRows || []).filter(r => (r["キャラ名"] || "").trim() === CHARACTER_CONFIG.abilityKey);
-      const luckByLevel = {};
-      luckRows.forEach(r => {
-        const lv = String(r["レベル"] || "").trim();
-        if (!lv) return;
-        luckByLevel[lv] = r;
-      });
+  // 対象キャラの運基準データをレベル別にまとめる
+  const luckRows = (abilityRows || []).filter(r => (r["キャラ名"] || "").trim() === CHARACTER_CONFIG.abilityKey);
+  const luckByLevel = {};
+  luckRows.forEach(r => {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    luckByLevel[lv] = r;
+  });
 
-      // 加入レベル（最初に累計が入る行）を特定
-      let joinLevel = null;
-      expRows.forEach(r => {
-        const total = r[CHARACTER_CONFIG.expTotalColumn];
-        const level = r["レベル"];
-        if (!isEmptyValue(total) && joinLevel === null && level !== undefined && level !== "") {
-          joinLevel = level;
-        }
-      });
-
-      expRows.forEach(r => {
-        const level = r["レベル"];
-        if (level === undefined || level === "") return;
-
-        // 加入前はスキップ
-        if (joinLevel !== null && Number(level) < Number(joinLevel)) return;
-
-        const total = r[CHARACTER_CONFIG.expTotalColumn];
-
-        const tr = document.createElement("tr");
-
-        // Lv
-        const tdLv = document.createElement("td");
-        tdLv.textContent = level;
-        tr.appendChild(tdLv);
-
-        // 累計
-        const tdTotal = document.createElement("td");
-        tdTotal.textContent = isEmptyValue(total) ? "" : total;
-        tr.appendChild(tdTotal);
-
-        // 運系（なければ空欄）
-        const luck = luckByLevel[String(level).trim()] || {};
-        const tdLuckBase = document.createElement("td");
-        tdLuckBase.textContent = luck["運基準"] ?? "";
-        tr.appendChild(tdLuckBase);
-
-        const tdLuckMin = document.createElement("td");
-        tdLuckMin.textContent = luck["運下限"] ?? "";
-        tr.appendChild(tdLuckMin);
-
-        const tdLuckMax = document.createElement("td");
-        tdLuckMax.textContent = luck["運上限"] ?? "";
-        tr.appendChild(tdLuckMax);
-
-        tbody.appendChild(tr);
-      });
-
-      if (!tbody.hasChildNodes()) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 5;
-        td.className = "status-empty";
-        td.textContent = "経験値データが見つかりませんでした。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      }
+  // 加入レベル（最初に累計が入る行）を特定
+  let joinLevel = null;
+  expRows.forEach(r => {
+    const total = r[CHARACTER_CONFIG.expTotalColumn];
+    const level = r["レベル"];
+    if (!isEmptyValue(total) && joinLevel === null && level !== undefined && level !== "") {
+      joinLevel = level;
     }
+  });
+
+  // 経験値データをレベル別にまとめる
+  const expByLevel = {};
+  expRows.forEach(r => {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    expByLevel[lv] = r;
+  });
+
+  // 経験値・運の両方に存在するレベル + どちらか片方だけに存在するレベルをすべて対象にする
+  const levelSet = new Set();
+  expRows.forEach(r => {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    levelSet.add(lv);
+  });
+  luckRows.forEach(r => {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    levelSet.add(lv);
+  });
+
+  const sortedLevels = Array.from(levelSet).sort((a, b) => Number(a) - Number(b));
+
+  sortedLevels.forEach(level => {
+    // 加入前はスキップ
+    if (joinLevel !== null && Number(level) < Number(joinLevel)) return;
+
+    const expRow = expByLevel[level] || {};
+    const total = expRow[CHARACTER_CONFIG.expTotalColumn];
+
+    const tr = document.createElement("tr");
+
+    // Lv
+    const tdLv = document.createElement("td");
+    tdLv.textContent = level;
+    tr.appendChild(tdLv);
+
+    // 累計
+    const tdTotal = document.createElement("td");
+    tdTotal.textContent = isEmptyValue(total) ? "" : total;
+    tr.appendChild(tdTotal);
+
+    // 運系（なければ空欄）
+    const luck = luckByLevel[String(level).trim()] || {};
+    const tdLuckBase = document.createElement("td");
+    tdLuckBase.textContent = luck["運基準"] ?? "";
+    tr.appendChild(tdLuckBase);
+
+    const tdLuckMin = document.createElement("td");
+    tdLuckMin.textContent = luck["運下限"] ?? "";
+    tr.appendChild(tdLuckMin);
+
+    const tdLuckMax = document.createElement("td");
+    tdLuckMax.textContent = luck["運上限"] ?? "";
+    tr.appendChild(tdLuckMax);
+
+    tbody.appendChild(tr);
+  });
+
+  if (!tbody.hasChildNodes()) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "status-empty";
+    td.textContent = "経験値データが見つかりませんでした。";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
 
     function fillLuckTable(rows) {
       const tbody = document.querySelector("#luck-table tbody");

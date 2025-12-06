@@ -201,63 +201,86 @@ function fillInitialStats(rows) {
 }
 
 function fillTable(expRows, abilityRows) {
-      const tbody = document.querySelector("#dq1-exp-table tbody");
-      if (!tbody) return;
-      tbody.innerHTML = "";
+  const tbody = document.querySelector("#dq1-exp-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-      // 対象キャラの運基準データをレベル別にまとめる
-      const luckRows = (abilityRows || []).filter(function(r) {
-        return (r["キャラ名"] || "").trim() === ABILITY_KEY;
-      });
-      const luckByLevel = {};
-      luckRows.forEach(function(r) {
-        const lv = String(r["レベル"] || "").trim();
-        if (!lv) return;
-        luckByLevel[lv] = r;
-      });
+  // 対象キャラの運基準データをレベル別にまとめる
+  const luckRows = (abilityRows || []).filter(function(r) {
+    return (r["キャラ名"] || "").trim() === ABILITY_KEY;
+  });
+  const luckByLevel = {};
+  luckRows.forEach(function(r) {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    luckByLevel[lv] = r;
+  });
 
-      expRows.forEach(function(r) {
-        const level = String(r["レベル"] || "").trim();
-        if (!level) return;
+  // 経験値データをレベル別にまとめる
+  const expByLevel = {};
+  expRows.forEach(function(r) {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    expByLevel[lv] = r;
+  });
 
-        const total = r["DQ1主人公"];
+  // 経験値・運の両方に存在するレベル + どちらか片方だけに存在するレベルをすべて対象にする
+  const levelSet = new Set();
+  expRows.forEach(function(r) {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    levelSet.add(lv);
+  });
+  luckRows.forEach(function(r) {
+    const lv = String(r["レベル"] || "").trim();
+    if (!lv) return;
+    levelSet.add(lv);
+  });
 
-        const tr = document.createElement("tr");
+  const sortedLevels = Array.from(levelSet).sort(function(a, b) {
+    return Number(a) - Number(b);
+  });
 
-        // Lv
-        const tdLv = document.createElement("td");
-        tdLv.textContent = level;
-        tr.appendChild(tdLv);
+  sortedLevels.forEach(function(level) {
+    const expRow = expByLevel[level] || {};
+    const total = expRow["DQ1主人公"];
 
-        // 累計
-        const tdTotal = document.createElement("td");
-        tdTotal.textContent = total || "";
-        tr.appendChild(tdTotal);
+    const tr = document.createElement("tr");
 
-        // 運系（なければ空欄）
-        const luck = luckByLevel[level] || {};
-        function appendLuck(key) {
-          const td = document.createElement("td");
-          td.textContent = luck[key] ?? "";
-          tr.appendChild(td);
-        }
-        appendLuck("運基準");
-        appendLuck("運下限");
-        appendLuck("運上限");
+    // Lv
+    const tdLv = document.createElement("td");
+    tdLv.textContent = level;
+    tr.appendChild(tdLv);
 
-        tbody.appendChild(tr);
-      });
+    // 累計
+    const tdTotal = document.createElement("td");
+    tdTotal.textContent = total || "";
+    tr.appendChild(tdTotal);
 
-      if (!tbody.hasChildNodes()) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 5;
-        td.className = "status-empty";
-        td.textContent = "経験値データが見つかりませんでした。";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      }
+    // 運系（なければ空欄）
+    const luck = luckByLevel[level] || {};
+    function appendLuck(key) {
+      const td = document.createElement("td");
+      td.textContent = luck[key] ?? "";
+      tr.appendChild(td);
     }
+    appendLuck("運基準");
+    appendLuck("運下限");
+    appendLuck("運上限");
+
+    tbody.appendChild(tr);
+  });
+
+  if (!tbody.hasChildNodes()) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "status-empty";
+    td.textContent = "経験値データが見つかりませんでした。";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
 
       Promise.all([
     fetch(EXP_CSV).then(function(res) {
