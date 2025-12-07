@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>DQ2 せいすい・トヘロス適正レベル一覧 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  background-color: #f7f2e9; /* トップページと同系統の薄いオレンジ系 */
+  color: #333;
+}
+a {
+  color: #1f5faa;
+}
+header h1, h1 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #d4b27c;
+  padding-bottom: 0.25rem;
+}
+h2 {
+  font-size: 1.2rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.4rem;
+  border-left: 4px solid #d4b27c;
+  padding-left: 0.5rem;
+}
+nav {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+nav a {
+  margin-right: 8px;
+}
+p.note, .legend {
+  font-size: 0.85rem;
+  color: #555;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  background-color: #f2e7d7;
+}
+tbody tr:nth-child(odd) {
+  background-color: #fbf7f0;
+}
+tbody tr:nth-child(even) {
+  background-color: #fdfaf5;
+}
+.status-empty {
+  text-align: center;
+  padding: 8px 0;
+  color: #777;
+}
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+  header h1, h1 {
+    font-size: 1.3rem;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DQ2 せいすい・トヘロス適正レベル一覧</h1>
+  </header>
+
+  <nav>
+    <a href="./index.html">&laquo; トップページに戻る</a>
+  </nav>
+
+  <section>
+    <p class="note">
+      せいすい／トヘロスを使用したときに、先頭キャラクターのレベルが条件を満たしていれば敵が出現しなくなるエリアの目安です。<br>
+      現在はDQ2フィールド／ダンジョンのみを掲載しています（一部高レベル帯は未検証）。<br>
+      ※判定は先頭キャラのレベルのみ参照されます。後列のレベルが条件を満たしていても、先頭が足りない場合は敵が出現します。
+    </p>
+  </section>
+
+  <section id="search-section">
+    <h2>絞り込み</h2>
+    <div class="search-form" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+      <label>作品<br>
+        <select id="filter-work">
+          <option value="">すべて</option>
+        </select>
+      </label>
+
+      <label>種別<br>
+        <select id="filter-type">
+          <option value="">すべて</option>
+        </select>
+      </label>
+
+      <label>場所キーワード<br>
+        <input type="text" id="filter-place" placeholder="例：ローレシア周辺" style="min-width: 12rem;">
+      </label>
+
+      <label>現在のLv（先頭キャラ）<br>
+        <input type="number" id="filter-level" min="1" max="99" style="width: 6rem;">
+      </label>
+
+      <label>
+        条件<br>
+        <select id="level-mode">
+          <option value="none">レベル条件なし</option>
+          <option value="reachable">必要LV ≦ 現在Lvのエリアを表示</option>
+          <option value="exact">必要LV ＝ 指定Lvのエリアのみ</option>
+        </select>
+      </label>
+
+      <button id="filter-button">検索</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>一覧</h2>
+    <p class="note" id="result-summary"></p>
+    <table class="data-table" id="encounter-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>作品</th>
+          <th>種別</th>
+          <th>場所</th>
+          <th>必要LV</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5" class="status-empty">データを読み込み中です…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    function loadCsv(url) {
+      return new Promise(function(resolve, reject) {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: 'greedy',
+          complete: function(results) {
+            const rows = (results.data || []).filter(function(row) {
+              return Object.values(row).some(function(v) {
+                return v !== null && String(v).trim() !== "";
+              });
+            });
+            resolve(rows);
+          },
+          error: function(err) {
+            reject(err);
+          }
+        });
+      });
+    }
+
+    function normalizeRows(rows) {
+      return rows.map(function(row, idx) {
+        return {
+          no: String(row["No"] || (idx + 1)).trim(),
+          work: String(row["作品名"] || "").trim(),
+          type: String(row["種別"] || "").trim(),
+          place: String(row["エリア名"] || "").trim(),
+          level: String(row["必要LV"] || "").trim()
+        };
+      }).filter(function(r) {
+        return r.work || r.type || r.place;
+      });
+    }
+
+    function setupFilters(data) {
+      const workSelect = document.getElementById("filter-work");
+      const typeSelect = document.getElementById("filter-type");
+
+      const workSet = new Set();
+      const typeSet = new Set();
+
+      data.forEach(function(r) {
+        if (r.work) workSet.add(r.work);
+        if (r.type) typeSet.add(r.type);
+      });
+
+      Array.from(workSet).sort(function(a, b) { return a.localeCompare(b, "ja"); }).forEach(function(work) {
+        const opt = document.createElement("option");
+        opt.value = work;
+        opt.textContent = work;
+        workSelect.appendChild(opt);
+      });
+
+      Array.from(typeSet).sort(function(a, b) { return a.localeCompare(b, "ja"); }).forEach(function(t) {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        typeSelect.appendChild(opt);
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector("#encounter-table tbody");
+      tbody.innerHTML = "";
+
+      if (!data.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "status-empty";
+        td.textContent = "条件に一致するエリアがありません。";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      data.forEach(function(r) {
+        const tr = document.createElement("tr");
+
+        function append(text) {
+          const td = document.createElement("td");
+          td.textContent = text;
+          tr.appendChild(td);
+        }
+
+        append(r.no);
+        append(r.work);
+        append(r.type);
+        append(r.place);
+        append(r.level);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateSummary(data, allCount) {
+      const summary = document.getElementById("result-summary");
+      if (!data.length) {
+        summary.textContent = "0件（全" + allCount + "件中）";
+      } else {
+        summary.textContent = data.length + "件表示中（全" + allCount + "件中）";
+      }
+    }
+
+    function applyFilter(allData) {
+      const workSelect = document.getElementById("filter-work");
+      const typeSelect = document.getElementById("filter-type");
+      const placeInput = document.getElementById("filter-place");
+      const levelInput = document.getElementById("filter-level");
+      const levelMode = document.getElementById("level-mode");
+
+      const work = String(workSelect.value || "").trim();
+      const type = String(typeSelect.value || "").trim();
+      const placeKeyword = String(placeInput.value || "").trim();
+      const levelStr = String(levelInput.value || "").trim();
+      const mode = levelMode.value;
+
+      let levelVal = null;
+      if (levelStr) {
+        const n = Number(levelStr);
+        if (Number.isFinite(n) && n > 0) {
+          levelVal = n;
+        }
+      }
+
+      const filtered = allData.filter(function(r) {
+        if (work && r.work !== work) return false;
+        if (type && r.type !== type) return false;
+
+        if (placeKeyword) {
+          if (r.place.indexOf(placeKeyword) === -1) return false;
+        }
+
+        if (mode !== "none" && levelVal !== null) {
+          if (!r.level) return false; // 必要LV未入力はレベル検索の対象外
+          const lv = Number(r.level);
+          if (!Number.isFinite(lv)) return false;
+
+          if (mode === "reachable") {
+            if (!(lv <= levelVal)) return false;
+          } else if (mode === "exact") {
+            if (lv !== levelVal) return false;
+          }
+        }
+
+        return true;
+      });
+
+      // No順にソート
+      filtered.sort(function(a, b) {
+        const na = Number(a.no);
+        const nb = Number(b.no);
+        if (Number.isFinite(na) && Number.isFinite(nb)) {
+          return na - nb;
+        }
+        return a.no.localeCompare(b.no, "ja");
+      });
+
+      renderTable(filtered);
+      updateSummary(filtered, allData.length);
+    }
+
+    (function init() {
+      const tbody = document.querySelector("#encounter-table tbody");
+      const summary = document.getElementById("result-summary");
+
+      loadCsv("dq_encounter_level.csv").then(function(rows) {
+        const data = normalizeRows(rows);
+
+        if (!data.length) {
+          tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>データがありません。</td></tr>";
+          summary.textContent = "";
+          return;
+        }
+
+        setupFilters(data);
+        renderTable(data);
+        updateSummary(data, data.length);
+
+        document.getElementById("filter-button").addEventListener("click", function() {
+          applyFilter(data);
+        });
+
+        document.getElementById("filter-place").addEventListener("keydown", function(e) {
+          if (e.key === "Enter") applyFilter(data);
+        });
+        document.getElementById("filter-level").addEventListener("keydown", function(e) {
+          if (e.key === "Enter") applyFilter(data);
+        });
+      }).catch(function(e) {
+        console.error(e);
+        tbody.innerHTML = "<tr><td colspan='5' class='status-empty'>データの読み込みに失敗しました。</td></tr>";
+        summary.textContent = "";
+      });
+    })();
+  </script>
+</body>
+</html>
