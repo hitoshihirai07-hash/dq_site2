@@ -195,140 +195,122 @@
       if (!text) return "";
       return text.replace(/\n/g, "<br>");
     }
-  async function renderItems() {
-    const { header, data } = await loadCSV(CSV_ITEMS);
-    const idx = Object.fromEntries(header.map((h, i) => [h, i]));
-    const tbody = document.getElementById("items-body");
-    const searchInput = document.getElementById("items-search");
-    const kindSelect = document.getElementById("items-kind");
 
-    function applyFilter() {
-      const kw = searchInput.value.trim();
-      const kindFilter = kindSelect.value;
-      tbody.innerHTML = "";
+        async function renderItems() {
+      const { header, data } = await loadCSV(CSV_ITEMS);
+      const idx = Object.fromEntries(header.map((h, i) => [h, i]));
+      const tbody = document.getElementById("items-body");
+      const searchInput = document.getElementById("items-search");
+      const kindSelect = document.getElementById("items-kind");
 
-      const rowsToShow = [];
+      function applyFilter() {
+        const kw = searchInput.value.trim();
+        const kindFilter = kindSelect.value;
+        tbody.innerHTML = "";
 
-      for (const row of data) {
-        const kind      = row[idx["種別"]] || "";
-        const name      = row[idx["名前"]] || "";
-        const atk       = idx["攻撃力"] !== undefined ? (row[idx["攻撃力"]] || "") : "";
-        const def       = idx["守備力"] !== undefined ? (row[idx["守備力"]] || "") : "";
-        const buyPrice  = idx["買値"]   !== undefined ? (row[idx["買値"]]   || "") : "";
-        const sellPrice = idx["売値"]   !== undefined ? (row[idx["売値"]]   || "") : "";
-        const effect    = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
-        const acquire   = idx["入手方法"] !== undefined ? (row[idx["入手方法"]] || "") : "";
-        const equip     = idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "";
-        const note      = idx["備考"]     !== undefined ? (row[idx["備考"]]     || "") : "";
+        const rowsToShow = [];
 
-        const kindForDisplay = kind || (note && note.includes("必要技") ? "超絶技" : kind);
+        for (const row of data) {
+          const kind      = row[idx["種別"]] || "";
+          const name      = row[idx["名前"]] || "";
+          const atk       = idx["攻撃力"] !== undefined ? (row[idx["攻撃力"]] || "") : "";
+          const def       = idx["守備力"] !== undefined ? (row[idx["守備力"]] || "") : "";
+          const buyPrice  = idx["買値"]   !== undefined ? (row[idx["買値"]]   || "") : "";
+          const sellPrice = idx["売値"]   !== undefined ? (row[idx["売値"]]   || "") : "";
+          const effect    = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
+          const acquire   = idx["入手方法"] !== undefined ? (row[idx["入手方法"]] || "") : "";
+          const equip     = idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "";
+          const note      = idx["備考"]     !== undefined ? (row[idx["備考"]]     || "") : "";
 
-        if (kindFilter && kindForDisplay !== kindFilter) continue;
+          // 種別フィルタ
+          if (kindFilter) {
+            if (kindFilter === "装備") {
+              if (!kind.includes("装備")) continue;
+            } else {
+              if (kind !== kindFilter) continue;
+            }
+          }
 
-        const fullText = [
-          kindForDisplay,
-          name,
-          atk,
-          def,
-          buyPrice,
-          sellPrice,
-          effect,
-          acquire,
-          equip,
-          note
-        ].join(" ");
-        if (!textMatch(fullText, kw)) continue;
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note].join(" ");
+          if (!textMatch(fullText, kw)) continue;
 
-        rowsToShow.push({
-          kind: kindForDisplay,
-          name,
-          atk,
-          def,
-          buyPrice,
-          sellPrice,
-          effect,
-          acquire,
-          equip,
-          note
-        });
-      }
-
-      // ソートは今まで通り（道具→装備→その他 の優先）
-      rowsToShow.sort((a, b) => {
-        const rank = (k) => {
-          if (k === "道具") return 0;
-          if (k && k.includes("装備")) return 1;
-          return 2;
-        };
-        const ra = rank(a.kind);
-        const rb = rank(b.kind);
-        if (ra !== rb) return ra - rb;
-        if (a.name !== b.name) return a.name.localeCompare(b.name, "ja");
-        return 0;
-      });
-
-      for (const item of rowsToShow) {
-        const tr = document.createElement("tr");
-
-        const tdKind = document.createElement("td");
-        if (item.kind) {
-          const span = document.createElement("span");
-          span.className = "pill";
-          span.textContent = item.kind;
-          tdKind.appendChild(span);
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note });
         }
-        tr.appendChild(tdKind);
 
-        const tdName = document.createElement("td");
-        tdName.textContent = item.name;
-        tr.appendChild(tdName);
+        rowsToShow.sort((a, b) => {
+          const rank = (k) => {
+            if (k === "道具") return 0;
+            if (k && k.includes("装備")) return 1;
+            return 2;
+          };
+          const ra = rank(a.kind);
+          const rb = rank(b.kind);
+          if (ra !== rb) return ra - rb;
+          return (a.name || "").localeCompare(b.name || "", "ja");
+        });
 
-        const tdAtk = document.createElement("td");
-        tdAtk.className = "nowrap";
-        tdAtk.textContent = item.atk;
-        tr.appendChild(tdAtk);
+        for (const item of rowsToShow) {
+          const tr = document.createElement("tr");
 
-        const tdDef = document.createElement("td");
-        tdDef.className = "nowrap";
-        tdDef.textContent = item.def;
-        tr.appendChild(tdDef);
+          const tdKind = document.createElement("td");
+          if (item.kind) {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.textContent = item.kind;
+            tdKind.appendChild(span);
+          }
+          tr.appendChild(tdKind);
 
-        const tdBuy = document.createElement("td");
-        tdBuy.className = "nowrap";
-        tdBuy.textContent = item.buyPrice;
-        tr.appendChild(tdBuy);
+          const tdName = document.createElement("td");
+          tdName.textContent = item.name;
+          tr.appendChild(tdName);
 
-        const tdSell = document.createElement("td");
-        tdSell.className = "nowrap";
-        tdSell.textContent = item.sellPrice;
-        tr.appendChild(tdSell);
+          const tdAtk = document.createElement("td");
+          tdAtk.className = "nowrap";
+          tdAtk.textContent = item.atk;
+          tr.appendChild(tdAtk);
 
-        const tdEffect = document.createElement("td");
-        tdEffect.innerHTML = nl2br(item.effect);
-        tr.appendChild(tdEffect);
+          const tdDef = document.createElement("td");
+          tdDef.className = "nowrap";
+          tdDef.textContent = item.def;
+          tr.appendChild(tdDef);
 
-        const tdAcquire = document.createElement("td");
-        tdAcquire.innerHTML = nl2br(item.acquire);
-        tr.appendChild(tdAcquire);
+          const tdBuy = document.createElement("td");
+          tdBuy.className = "nowrap";
+          tdBuy.textContent = item.buyPrice;
+          tr.appendChild(tdBuy);
 
-        const tdEquip = document.createElement("td");
-        tdEquip.innerHTML = nl2br(item.equip);
-        tr.appendChild(tdEquip);
+          const tdSell = document.createElement("td");
+          tdSell.className = "nowrap";
+          tdSell.textContent = item.sellPrice;
+          tr.appendChild(tdSell);
 
-        const tdNote = document.createElement("td");
-        tdNote.innerHTML = nl2br(item.note);
-        tr.appendChild(tdNote);
+          const tdEffect = document.createElement("td");
+          tdEffect.innerHTML = nl2br(item.effect);
+          tr.appendChild(tdEffect);
 
-        tbody.appendChild(tr);
+          const tdAcquire = document.createElement("td");
+          tdAcquire.innerHTML = nl2br(item.acquire);
+          tr.appendChild(tdAcquire);
+
+          const tdEquip = document.createElement("td");
+          tdEquip.innerHTML = nl2br(item.equip);
+          tr.appendChild(tdEquip);
+
+          const tdNote = document.createElement("td");
+          tdNote.innerHTML = nl2br(item.note);
+          tr.appendChild(tdNote);
+
+          tbody.appendChild(tr);
+        }
       }
+
+      searchInput.addEventListener("input", applyFilter);
+      kindSelect.addEventListener("change", applyFilter);
+      applyFilter();
     }
 
-    searchInput.addEventListener("input", applyFilter);
-    kindSelect.addEventListener("change", applyFilter);
-    applyFilter();
-  }
-  ...
-    async function renderSpells() {
+async function renderSpells() {
       const { header, data } = await loadCSV(CSV_SPELLS);
       const idx = Object.fromEntries(header.map((h, i) => [h, i]));
       const tbody = document.getElementById("spells-body");
