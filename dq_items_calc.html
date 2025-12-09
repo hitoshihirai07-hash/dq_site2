@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>DQ1・DQ2 アイテム・装備 所持金計算機</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+
+    body { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+           background-color:#111827;color:#e5e7eb;margin:0;padding:0; }
+    header { background:#1f2937;padding:12px 16px;display:flex;align-items:center;
+             justify-content:space-between;border-bottom:1px solid #374151; }
+    header h1 { font-size:18px;margin:0; }
+    header a { color:#93c5fd;text-decoration:none;font-size:14px; }
+    main { padding:16px;max-width:1200px;margin:0 auto; }
+    .tabs { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
+    .tab-btn { border:1px solid #4b5563;background:#111827;color:#e5e7eb;
+               padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer; }
+    .tab-btn.active { background:#2563eb;border-color:#2563eb; }
+    .controls { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center; }
+    .controls input[type="search"], .controls select {
+      background:#111827;border:1px solid #4b5563;border-radius:6px;
+      padding:6px 8px;color:#e5e7eb;font-size:13px;
+    }
+    .controls label { font-size:12px;color:#9ca3af;display:flex;flex-direction:column;gap:2px; }
+    table { width:100%;border-collapse:collapse;font-size:12px; }
+    thead { background:#111827;position:sticky;top:0;z-index:1; }
+    th, td { border:1px solid #374151;padding:4px 6px;vertical-align:top; }
+    th { text-align:left;white-space:nowrap; }
+    tbody tr:nth-child(even) { background:#020617; }
+    tbody tr:nth-child(odd) { background:#030712; }
+    .pill { display:inline-block;padding:0 6px;border-radius:999px;font-size:11px;
+            border:1px solid #4b5563;background:rgba(15,23,42,.8); }
+    .muted { color:#9ca3af;font-size:11px;margin-top:4px; }
+    .nowrap { white-space:nowrap; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .table-wrap { max-height:70vh;overflow:auto;border-radius:8px;border:1px solid #374151; }
+  
+    .calc-grid { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; }
+    .calc-block { flex:1 1 320px; border:1px solid #374151; border-radius:8px; padding:8px; }
+    .calc-block h2 { font-size:14px; margin:0 0 6px; }
+    .calc-block table { font-size:12px; }
+    .summary-box { margin-top:16px; border:1px solid #374151; border-radius:8px; padding:8px; }
+    .summary-box h2 { font-size:14px; margin:0 0 6px; }
+    .summary-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:2px; }
+    .summary-label { color:#9ca3af; }
+    .summary-value { font-variant-numeric:tabular-nums; }
+    .summary-result-ok { color:#4ade80; }
+    .summary-result-ng { color:#f97373; }
+    input[type="number"] { background:#111827;border:1px solid #4b5563;border-radius:6px;
+                         padding:6px 8px;color:#e5e7eb;font-size:13px; width:120px; }
+    .calc-table thead th { position:static; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DQ1・DQ2 アイテム・装備 所持金計算機</h1>
+    <a href="./index.html">トップに戻る</a>
+  </header>
+  <main>
+    <section>
+      <div class="controls">
+        <label>作品
+          <select id="game-select">
+            <option value="dq2">DQ2</option>
+            <option value="dq1">DQ1</option>
+          </select>
+        </label>
+        <label>現在の所持金
+          <input type="number" id="current-money" min="0" step="1" value="0" />
+        </label>
+      </div>
+      <p class="muted">
+        所持金と「買いたいもの」「売りたいもの」を入力すると、合計と足りるかどうかを自動で計算します。
+        アイテム名は一部入力すると候補が出ます（作品ごとにitems.csvから取得）。
+      </p>
+
+      <div class="calc-grid">
+        <div class="calc-block">
+          <h2>買いたいもの</h2>
+          <div class="table-wrap">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>アイテム名</th>
+                  <th class="nowrap">個数</th>
+                  <th class="nowrap">単価（買値）</th>
+                  <th class="nowrap">小計</th>
+                </tr>
+              </thead>
+              <tbody id="buy-rows">
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">最大10行まで入力できます。買値が設定されていないアイテムは小計0として扱われます。</p>
+        </div>
+
+        <div class="calc-block">
+          <h2>売りたいもの</h2>
+          <div class="table-wrap">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>アイテム名</th>
+                  <th class="nowrap">個数</th>
+                  <th class="nowrap">単価（売値）</th>
+                  <th class="nowrap">小計</th>
+                </tr>
+              </thead>
+              <tbody id="sell-rows">
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">最大10行まで入力できます。売値が設定されていないアイテムは小計0として扱われます。</p>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        <h2>計算結果</h2>
+        <div class="summary-row">
+          <div class="summary-label">現在の所持金</div>
+          <div class="summary-value" id="summary-current">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">売却合計</div>
+          <div class="summary-value" id="summary-sell">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">購入合計</div>
+          <div class="summary-value" id="summary-buy">0 G</div>
+        </div>
+        <hr style="border:0;border-top:1px solid #374151;margin:6px 0;" />
+        <div class="summary-row">
+          <div class="summary-label">買い物後の所持金</div>
+          <div class="summary-value" id="summary-after">0 G</div>
+        </div>
+        <p id="summary-result" class="muted"></p>
+      </div>
+
+      <datalist id="buy-item-list"></datalist>
+      <datalist id="sell-item-list"></datalist>
+    </section>
+  </main>
+
+  <script>
+    const CSV_PATHS = {
+      dq1: "data/dq1_items.csv",
+      dq2: "data/dq2_items.csv"
+    };
+
+    let currentGame = "dq2";
+    let itemsByName = new Map();
+    let buyCandidates = [];
+    let sellCandidates = [];
+
+    function formatNumber(value) {
+      const n = Number(value);
+      if (!isFinite(n)) return "0";
+      return n.toLocaleString("ja-JP");
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (!lines.length) return { header: [], data: [] };
+      const header = lines[0].replace(/^\ufeff/, "").split(",");
+      const data = lines.slice(1).map(line => line.split(","));
+      return { header, data };
+    }
+
+    async function loadItems(game) {
+      const path = CSV_PATHS[game];
+      const res = await fetch(path);
+      const text = await res.text();
+      const { header, data } = parseCSV(text);
+
+      const idx = Object.fromEntries(header.map((h, i) => [h, i]));
+
+      itemsByName = new Map();
+      buyCandidates = [];
+      sellCandidates = [];
+
+      for (const row of data) {
+        const name = row[idx["名前"]] || "";
+        if (!name) continue;
+
+        const buyRaw = idx["買値"] !== undefined ? (row[idx["買値"]] || "") : "";
+        const sellRaw = idx["売値"] !== undefined ? (row[idx["売値"]] || "") : "";
+
+        const buy = Number(buyRaw.replace(/,/g, ""));
+        const sell = Number(sellRaw.replace(/,/g, ""));
+
+        const item = {
+          name,
+          buy: isFinite(buy) ? buy : NaN,
+          sell: isFinite(sell) ? sell : NaN
+        };
+
+        itemsByName.set(name, item);
+
+        if (isFinite(item.buy) && item.buy > 0) {
+          buyCandidates.push(item);
+        }
+        if (isFinite(item.sell) && item.sell > 0) {
+          sellCandidates.push(item);
+        }
+      }
+
+      buyCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+      sellCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+
+      const buyList = document.getElementById("buy-item-list");
+      const sellList = document.getElementById("sell-item-list");
+      buyList.innerHTML = "";
+      sellList.innerHTML = "";
+
+      for (const item of buyCandidates) {
+        const opt = document.createElement("option");
+        opt.value = item.name;
+        buyList.appendChild(opt);
+      }
+      for (const item of sellCandidates) {
+        const opt = document.createElement("option");
+        opt.value = item.name;
+        sellList.appendChild(opt);
+      }
+
+      recalcAll();
+    }
+
+    function setupRows() {
+      const buyBody = document.getElementById("buy-rows");
+      const sellBody = document.getElementById("sell-rows");
+      buyBody.innerHTML = "";
+      sellBody.innerHTML = "";
+
+      for (let i = 0; i < 10; i++) {
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        const inputName = document.createElement("input");
+        inputName.type = "text";
+        inputName.setAttribute("list", "buy-item-list");
+        inputName.className = "buy-name";
+        inputName.addEventListener("input", recalcAll);
+        tdName.appendChild(inputName);
+        tr.appendChild(tdName);
+
+        const tdQty = document.createElement("td");
+        const inputQty = document.createElement("input");
+        inputQty.type = "number";
+        inputQty.min = "0";
+        inputQty.step = "1";
+        inputQty.className = "buy-qty";
+        inputQty.addEventListener("input", recalcAll);
+        tdQty.appendChild(inputQty);
+        tr.appendChild(tdQty);
+
+        const tdUnit = document.createElement("td");
+        tdUnit.className = "buy-unit nowrap";
+        tr.appendChild(tdUnit);
+
+        const tdSub = document.createElement("td");
+        tdSub.className = "buy-subtotal nowrap";
+        tr.appendChild(tdSub);
+
+        buyBody.appendChild(tr);
+      }
+
+      for (let i = 0; i < 10; i++) {
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        const inputName = document.createElement("input");
+        inputName.type = "text";
+        inputName.setAttribute("list", "sell-item-list");
+        inputName.className = "sell-name";
+        inputName.addEventListener("input", recalcAll);
+        tdName.appendChild(inputName);
+        tr.appendChild(tdName);
+
+        const tdQty = document.createElement("td");
+        const inputQty = document.createElement("input");
+        inputQty.type = "number";
+        inputQty.min = "0";
+        inputQty.step = "1";
+        inputQty.className = "sell-qty";
+        inputQty.addEventListener("input", recalcAll);
+        tdQty.appendChild(inputQty);
+        tr.appendChild(tdQty);
+
+        const tdUnit = document.createElement("td");
+        tdUnit.className = "sell-unit nowrap";
+        tr.appendChild(tdUnit);
+
+        const tdSub = document.createElement("td");
+        tdSub.className = "sell-subtotal nowrap";
+        tr.appendChild(tdSub);
+
+        sellBody.appendChild(tr);
+      }
+    }
+
+    function recalcAll() {
+      const currentMoneyInput = document.getElementById("current-money");
+      const currentMoney = Number(currentMoneyInput.value || "0");
+
+      let buyTotal = 0;
+      let sellTotal = 0;
+
+      // 買う側
+      const buyBody = document.getElementById("buy-rows");
+      for (const tr of buyBody.querySelectorAll("tr")) {
+        const nameInput = tr.querySelector(".buy-name");
+        const qtyInput = tr.querySelector(".buy-qty");
+        const unitCell = tr.querySelector(".buy-unit");
+        const subCell = tr.querySelector(".buy-subtotal");
+
+        const name = (nameInput.value || "").trim();
+        const qty = Number(qtyInput.value || "0");
+
+        if (!name || !qty || qty <= 0) {
+          unitCell.textContent = "";
+          subCell.textContent = "";
+          continue;
+        }
+
+        const item = itemsByName.get(name);
+        if (!item || !isFinite(item.buy) || item.buy <= 0) {
+          unitCell.textContent = "-";
+          subCell.textContent = "";
+          continue;
+        }
+
+        const unit = item.buy;
+        const sub = unit * qty;
+        buyTotal += sub;
+
+        unitCell.textContent = formatNumber(unit);
+        subCell.textContent = formatNumber(sub);
+      }
+
+      // 売る側
+      const sellBody = document.getElementById("sell-rows");
+      for (const tr of sellBody.querySelectorAll("tr")) {
+        const nameInput = tr.querySelector(".sell-name");
+        const qtyInput = tr.querySelector(".sell-qty");
+        const unitCell = tr.querySelector(".sell-unit");
+        const subCell = tr.querySelector(".sell-subtotal");
+
+        const name = (nameInput.value || "").trim();
+        const qty = Number(qtyInput.value || "0");
+
+        if (!name || !qty || qty <= 0) {
+          unitCell.textContent = "";
+          subCell.textContent = "";
+          continue;
+        }
+
+        const item = itemsByName.get(name);
+        if (!item || !isFinite(item.sell) || item.sell <= 0) {
+          unitCell.textContent = "-";
+          subCell.textContent = "";
+          continue;
+        }
+
+        const unit = item.sell;
+        const sub = unit * qty;
+        sellTotal += sub;
+
+        unitCell.textContent = formatNumber(unit);
+        subCell.textContent = formatNumber(sub);
+      }
+
+      const totalFunds = currentMoney + sellTotal;
+      const after = totalFunds - buyTotal;
+
+      document.getElementById("summary-current").textContent = formatNumber(currentMoney) + " G";
+      document.getElementById("summary-sell").textContent    = formatNumber(sellTotal) + " G";
+      document.getElementById("summary-buy").textContent     = formatNumber(buyTotal) + " G";
+      document.getElementById("summary-after").textContent   = formatNumber(after) + " G";
+
+      const result = document.getElementById("summary-result");
+      result.classList.remove("summary-result-ok", "summary-result-ng");
+
+      if (buyTotal === 0) {
+        result.textContent = "買いたいものが入力されていません。";
+        return;
+      }
+
+      if (after >= 0) {
+        result.textContent = "購入可能です。買い物後の所持金は " + formatNumber(after) + " G です。";
+        result.classList.add("summary-result-ok");
+      } else {
+        const lack = -after;
+        result.textContent = "現在の所持金と売却額を合わせても " + formatNumber(lack) + " G 不足しています。";
+        result.classList.add("summary-result-ng");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupRows();
+      const gameSelect = document.getElementById("game-select");
+      const moneyInput = document.getElementById("current-money");
+
+      gameSelect.addEventListener("change", () => {
+        currentGame = gameSelect.value;
+        loadItems(currentGame);
+      });
+
+      moneyInput.addEventListener("input", recalcAll);
+
+      // 初期はDQ2
+      loadItems(currentGame);
+    });
+  </script>
+</body>
+</html>
