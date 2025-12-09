@@ -74,7 +74,8 @@
               <th>名前</th>
               <th class="nowrap">攻撃力</th>
               <th class="nowrap">守備力</th>
-              <th class="nowrap">価格</th>
+              <th class="nowrap">買値</th>
+              <th class="nowrap">売値</th>
               <th>効果</th>
               <th>入手方法</th>
               <th>装備可能</th>
@@ -229,10 +230,10 @@
             }
           }
 
-          const fullText = [kind, name, atk, def, price, effect, acquire, equip, note].join(" ");
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note].join(" ");
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, price, effect, acquire, equip, note });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -273,10 +274,15 @@
           tdDef.textContent = item.def;
           tr.appendChild(tdDef);
 
-          const tdPrice = document.createElement("td");
-          tdPrice.className = "nowrap";
-          tdPrice.textContent = item.price;
-          tr.appendChild(tdPrice);
+          const tdBuy = document.createElement("td");
+          tdBuy.className = "nowrap";
+          tdBuy.textContent = item.buyPrice;
+          tr.appendChild(tdBuy);
+
+          const tdSell = document.createElement("td");
+          tdSell.className = "nowrap";
+          tdSell.textContent = item.sellPrice;
+          tr.appendChild(tdSell);
 
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(item.effect);

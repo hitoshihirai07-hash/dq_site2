@@ -74,9 +74,11 @@
               <th>名前</th>
               <th class="nowrap">攻撃力</th>
               <th class="nowrap">守備力</th>
-              <th class="nowrap">価格</th>
+              <th class="nowrap">買値</th>
+              <th class="nowrap">売値</th>
               <th>効果</th>
               <th>入手方法</th>
+              <th>備考</th>
             </tr>
           </thead>
           <tbody id="items-body"></tbody>
@@ -211,7 +213,8 @@
           const name    = row[idx["名前"]] || "";
           const atk     = row[idx["攻撃力"]] || "";
           const def     = row[idx["守備力"]] || "";
-          const price   = row[idx["価格"]] || "";
+          const buyPrice  = row[idx["買値"]] || "";
+          const sellPrice = row[idx["売値"]] || "";
           const effect  = row[idx["効果"]] || "";
           const acquire = row[idx["入手方法"]] || "";
           const note    = row[idx["備考"]] || "";
@@ -224,10 +227,10 @@
             }
           }
 
-          const fullText = [kind, name, atk, def, price, effect, acquire, note].join(" ");
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, note].join(" ");
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, price, effect, acquire });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -268,10 +271,15 @@
           tdDef.textContent = item.def;
           tr.appendChild(tdDef);
 
-          const tdPrice = document.createElement("td");
-          tdPrice.className = "nowrap";
-          tdPrice.textContent = item.price;
-          tr.appendChild(tdPrice);
+          const tdBuy = document.createElement("td");
+          tdBuy.className = "nowrap";
+          tdBuy.textContent = item.buyPrice;
+          tr.appendChild(tdBuy);
+
+          const tdSell = document.createElement("td");
+          tdSell.className = "nowrap";
+          tdSell.textContent = item.sellPrice;
+          tr.appendChild(tdSell);
 
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(item.effect);
@@ -280,6 +288,10 @@
           const tdAcquire = document.createElement("td");
           tdAcquire.innerHTML = nl2br(item.acquire);
           tr.appendChild(tdAcquire);
+
+          const tdNote = document.createElement("td");
+          tdNote.innerHTML = nl2br(item.note);
+          tr.appendChild(tdNote);
 
           tbody.appendChild(tr);
         }
