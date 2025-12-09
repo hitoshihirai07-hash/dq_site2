@@ -41,7 +41,7 @@
     .calc-block { flex:1 1 320px; border:1px solid #374151; border-radius:8px; padding:8px; }
     .calc-block h2 { font-size:14px; margin:0 0 6px; }
     .calc-block table { font-size:12px; }
-    .summary-box { margin-top:12px; margin-bottom:16px; border:1px solid #374151; border-radius:8px; padding:8px; position:sticky; top:56px; background:#020617; z-index:5; }
+    .summary-box { margin-top:16px; margin-bottom:16px; border:1px solid #374151; padding:8px; background:#020617; }
     .summary-box h2 { font-size:14px; margin:0 0 6px; }
     .summary-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:2px; }
     .summary-label { color:#9ca3af; }
@@ -115,6 +115,9 @@
               </thead>
               <tbody id="buy-rows">
               </tbody>
+              <tfoot>
+                <tr><td colspan="4"><button type="button" id="add-buy-row">行を追加</button></td></tr>
+              </tfoot>
             </table>
           </div>
           <p class="muted">最大10行まで入力できます。買値が設定されていないアイテムは小計0として扱われます。</p>
@@ -134,6 +137,9 @@
               </thead>
               <tbody id="sell-rows">
               </tbody>
+              <tfoot>
+                <tr><td colspan="4"><button type="button" id="add-sell-row">行を追加</button></td></tr>
+              </tfoot>
             </table>
           </div>
           <p class="muted">最大10行まで入力できます。売値が設定されていないアイテムは小計0として扱われます。</p>
@@ -229,77 +235,108 @@
       recalcAll();
     }
 
+    
+    const MAX_ROWS = 10;
+    const INITIAL_ROWS = 3;
+
+    function addBuyRow() {
+      const buyBody = document.getElementById("buy-rows");
+      if (buyBody.querySelectorAll("tr").length >= MAX_ROWS) return;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      const selectName = document.createElement("select");
+      selectName.className = "buy-name";
+      selectName.addEventListener("change", recalcAll);
+      tdName.appendChild(selectName);
+      tr.appendChild(tdName);
+
+      const tdQty = document.createElement("td");
+      const inputQty = document.createElement("input");
+      inputQty.type = "number";
+      inputQty.min = "0";
+      inputQty.step = "1";
+      inputQty.className = "buy-qty";
+      inputQty.addEventListener("input", recalcAll);
+      tdQty.appendChild(inputQty);
+      tr.appendChild(tdQty);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.className = "buy-unit nowrap";
+      tr.appendChild(tdUnit);
+
+      const tdSub = document.createElement("td");
+      tdSub.className = "buy-subtotal nowrap";
+      tr.appendChild(tdSub);
+
+      buyBody.appendChild(tr);
+    }
+
+    function addSellRow() {
+      const sellBody = document.getElementById("sell-rows");
+      if (sellBody.querySelectorAll("tr").length >= MAX_ROWS) return;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      const selectName = document.createElement("select");
+      selectName.className = "sell-name";
+      selectName.addEventListener("change", recalcAll);
+      tdName.appendChild(selectName);
+      tr.appendChild(tdName);
+
+      const tdQty = document.createElement("td");
+      const inputQty = document.createElement("input");
+      inputQty.type = "number";
+      inputQty.min = "0";
+      inputQty.step = "1";
+      inputQty.className = "sell-qty";
+      inputQty.addEventListener("input", recalcAll);
+      tdQty.appendChild(inputQty);
+      tr.appendChild(tdQty);
+
+      const tdUnit = document.createElement("td");
+      tdUnit.className = "sell-unit nowrap";
+      tr.appendChild(tdUnit);
+
+      const tdSub = document.createElement("td");
+      tdSub.className = "sell-subtotal nowrap";
+      tr.appendChild(tdSub);
+
+      sellBody.appendChild(tr);
+    }
+
     function setupRows() {
       const buyBody = document.getElementById("buy-rows");
       const sellBody = document.getElementById("sell-rows");
       buyBody.innerHTML = "";
       sellBody.innerHTML = "";
 
-      for (let i = 0; i < 10; i++) {
-        const tr = document.createElement("tr");
-
-        const tdName = document.createElement("td");
-        const selectName = document.createElement("select");
-        selectName.className = "buy-name";
-        selectName.addEventListener("change", recalcAll);
-        tdName.appendChild(selectName);
-        tr.appendChild(tdName);
-
-        const tdQty = document.createElement("td");
-        const inputQty = document.createElement("input");
-        inputQty.type = "number";
-        inputQty.min = "0";
-        inputQty.step = "1";
-        inputQty.className = "buy-qty";
-        inputQty.addEventListener("input", recalcAll);
-        tdQty.appendChild(inputQty);
-        tr.appendChild(tdQty);
-
-        const tdUnit = document.createElement("td");
-        tdUnit.className = "buy-unit nowrap";
-        tr.appendChild(tdUnit);
-
-        const tdSub = document.createElement("td");
-        tdSub.className = "buy-subtotal nowrap";
-        tr.appendChild(tdSub);
-
-        buyBody.appendChild(tr);
+      for (let i = 0; i < INITIAL_ROWS; i++) {
+        addBuyRow();
+        addSellRow();
       }
 
-      for (let i = 0; i < 10; i++) {
-        const tr = document.createElement("tr");
-
-        const tdName = document.createElement("td");
-        const selectName = document.createElement("select");
-        selectName.className = "sell-name";
-        selectName.addEventListener("change", recalcAll);
-        tdName.appendChild(selectName);
-        tr.appendChild(tdName);
-
-        const tdQty = document.createElement("td");
-        const inputQty = document.createElement("input");
-        inputQty.type = "number";
-        inputQty.min = "0";
-        inputQty.step = "1";
-        inputQty.className = "sell-qty";
-        inputQty.addEventListener("input", recalcAll);
-        tdQty.appendChild(inputQty);
-        tr.appendChild(tdQty);
-
-        const tdUnit = document.createElement("td");
-        tdUnit.className = "sell-unit nowrap";
-        tr.appendChild(tdUnit);
-
-        const tdSub = document.createElement("td");
-        tdSub.className = "sell-subtotal nowrap";
-        tr.appendChild(tdSub);
-
-        sellBody.appendChild(tr);
+      const addBuyBtn = document.getElementById("add-buy-row");
+      const addSellBtn = document.getElementById("add-sell-row");
+      if (addBuyBtn) {
+        addBuyBtn.onclick = () => {
+          addBuyRow();
+          populateItemSelects();
+          recalcAll();
+        };
+      }
+      if (addSellBtn) {
+        addSellBtn.onclick = () => {
+          addSellRow();
+          populateItemSelects();
+          recalcAll();
+        };
       }
     }
 
-
-    function populateItemSelects() {
+function populateItemSelects() {
       const buySelects = document.querySelectorAll(".buy-name");
       const sellSelects = document.querySelectorAll(".sell-name");
 
