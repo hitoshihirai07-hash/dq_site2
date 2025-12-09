@@ -41,7 +41,7 @@
     .calc-block { flex:1 1 320px; border:1px solid #374151; border-radius:8px; padding:8px; }
     .calc-block h2 { font-size:14px; margin:0 0 6px; }
     .calc-block table { font-size:12px; }
-    .summary-box { margin-top:16px; border:1px solid #374151; border-radius:8px; padding:8px; }
+    .summary-box { margin-top:12px; margin-bottom:16px; border:1px solid #374151; border-radius:8px; padding:8px; position:sticky; top:56px; background:#020617; z-index:5; }
     .summary-box h2 { font-size:14px; margin:0 0 6px; }
     .summary-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:2px; }
     .summary-label { color:#9ca3af; }
@@ -73,10 +73,34 @@
       </div>
       <p class="muted">
         所持金と「買いたいもの」「売りたいもの」を入力すると、合計と足りるかどうかを自動で計算します。
-        アイテム名は一部入力すると候補が出ます（作品ごとにitems.csvから取得）。
+        アイテム名はプルダウンから選択できます。
       </p>
 
-      <div class="calc-grid">
+            <div class="summary-box">
+        <h2>計算結果</h2>
+        <div class="summary-row">
+          <div class="summary-label">現在の所持金</div>
+          <div class="summary-value" id="summary-current">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">売却合計</div>
+          <div class="summary-value" id="summary-sell">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">購入合計</div>
+          <div class="summary-value" id="summary-buy">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">買い物後の所持金</div>
+          <div class="summary-value" id="summary-after">0 G</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">判定</div>
+          <div class="summary-value" id="summary-result">-</div>
+        </div>
+      </div>
+
+<div class="calc-grid">
         <div class="calc-block">
           <h2>買いたいもの</h2>
           <div class="table-wrap">
@@ -115,13 +139,6 @@
           <p class="muted">最大10行まで入力できます。売値が設定されていないアイテムは小計0として扱われます。</p>
         </div>
       </div>
-
-      <div class="summary-box">
-        <h2>計算結果</h2>
-        <div class="summary-row">
-          <div class="summary-label">現在の所持金</div>
-          <div class="summary-value" id="summary-current">0 G</div>
-        </div>
         <div class="summary-row">
           <div class="summary-label">売却合計</div>
           <div class="summary-value" id="summary-sell">0 G</div>
@@ -138,8 +155,7 @@
         <p id="summary-result" class="muted"></p>
       </div>
 
-      <datalist id="buy-item-list"></datalist>
-      <datalist id="sell-item-list"></datalist>
+
     </section>
   </main>
 
@@ -209,22 +225,7 @@
       buyCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
       sellCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
 
-      const buyList = document.getElementById("buy-item-list");
-      const sellList = document.getElementById("sell-item-list");
-      buyList.innerHTML = "";
-      sellList.innerHTML = "";
-
-      for (const item of buyCandidates) {
-        const opt = document.createElement("option");
-        opt.value = item.name;
-        buyList.appendChild(opt);
-      }
-      for (const item of sellCandidates) {
-        const opt = document.createElement("option");
-        opt.value = item.name;
-        sellList.appendChild(opt);
-      }
-
+      populateItemSelects();
       recalcAll();
     }
 
@@ -238,12 +239,10 @@
         const tr = document.createElement("tr");
 
         const tdName = document.createElement("td");
-        const inputName = document.createElement("input");
-        inputName.type = "text";
-        inputName.setAttribute("list", "buy-item-list");
-        inputName.className = "buy-name";
-        inputName.addEventListener("input", recalcAll);
-        tdName.appendChild(inputName);
+        const selectName = document.createElement("select");
+        selectName.className = "buy-name";
+        selectName.addEventListener("change", recalcAll);
+        tdName.appendChild(selectName);
         tr.appendChild(tdName);
 
         const tdQty = document.createElement("td");
@@ -271,12 +270,10 @@
         const tr = document.createElement("tr");
 
         const tdName = document.createElement("td");
-        const inputName = document.createElement("input");
-        inputName.type = "text";
-        inputName.setAttribute("list", "sell-item-list");
-        inputName.className = "sell-name";
-        inputName.addEventListener("input", recalcAll);
-        tdName.appendChild(inputName);
+        const selectName = document.createElement("select");
+        selectName.className = "sell-name";
+        selectName.addEventListener("change", recalcAll);
+        tdName.appendChild(selectName);
         tr.appendChild(tdName);
 
         const tdQty = document.createElement("td");
@@ -298,6 +295,44 @@
         tr.appendChild(tdSub);
 
         sellBody.appendChild(tr);
+      }
+    }
+
+
+    function populateItemSelects() {
+      const buySelects = document.querySelectorAll(".buy-name");
+      const sellSelects = document.querySelectorAll(".sell-name");
+
+      for (const sel of buySelects) {
+        const current = sel.value;
+        sel.innerHTML = "";
+        const emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "（選択してください）";
+        sel.appendChild(emptyOpt);
+        for (const item of buyCandidates) {
+          const opt = document.createElement("option");
+          opt.value = item.name;
+          opt.textContent = item.name;
+          sel.appendChild(opt);
+        }
+        if (current) sel.value = current;
+      }
+
+      for (const sel of sellSelects) {
+        const current = sel.value;
+        sel.innerHTML = "";
+        const emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "（選択してください）";
+        sel.appendChild(emptyOpt);
+        for (const item of sellCandidates) {
+          const opt = document.createElement("option");
+          opt.value = item.name;
+          opt.textContent = item.name;
+          sel.appendChild(opt);
+        }
+        if (current) sel.value = current;
       }
     }
 
