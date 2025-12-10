@@ -2,246 +2,329 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>DQ1・DQ2 アイテム・装備 所持金計算機</title>
+  <title>DQ1・DQ2 アイテム所持金計算機</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-
-    body { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-           background-color:#111827;color:#e5e7eb;margin:0;padding:0; }
-    header { background:#1f2937;padding:12px 16px;display:flex;align-items:center;
-             justify-content:space-between;border-bottom:1px solid #374151; }
-    header h1 { font-size:18px;margin:0; }
-    header a { color:#93c5fd;text-decoration:none;font-size:14px; }
-    main { padding:16px;max-width:1200px;margin:0 auto; }
-    .tabs { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
-    .tab-btn { border:1px solid #4b5563;background:#111827;color:#e5e7eb;
-               padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer; }
-    .tab-btn.active { background:#2563eb;border-color:#2563eb; }
-    .controls { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center; }
-    .controls input[type="search"], .controls select {
-      background:#111827;border:1px solid #4b5563;border-radius:6px;
-      padding:6px 8px;color:#e5e7eb;font-size:13px;
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #020617;
+      color: #e5e7eb;
     }
-    .controls label { font-size:12px;color:#9ca3af;display:flex;flex-direction:column;gap:2px; }
-    table { width:100%;border-collapse:collapse;font-size:12px; }
-    thead { background:#111827;position:sticky;top:0;z-index:1; }
-    th, td { border:1px solid #374151;padding:4px 6px;vertical-align:top; }
-    th { text-align:left;white-space:nowrap; }
-    tbody tr:nth-child(even) { background:#020617; }
-    tbody tr:nth-child(odd) { background:#030712; }
-    .pill { display:inline-block;padding:0 6px;border-radius:999px;font-size:11px;
-            border:1px solid #4b5563;background:rgba(15,23,42,.8); }
-    .muted { color:#9ca3af;font-size:11px;margin-top:4px; }
-    .nowrap { white-space:nowrap; }
-    .tab-panel { display:none; }
-    .tab-panel.active { display:block; }
-    .table-wrap { max-height:70vh;overflow:auto;border-radius:8px;border:1px solid #374151; }
-  
-    .calc-grid { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; }
-    .calc-block { flex:1 1 320px; border:1px solid #374151; border-radius:8px; padding:8px; }
-    .calc-block h2 { font-size:14px; margin:0 0 6px; }
-    .calc-block table { font-size:12px; }
-    .summary-box { margin-top:16px; margin-bottom:16px; border:1px solid #374151; padding:8px; background:#020617; }
-    .summary-box h2 { font-size:14px; margin:0 0 6px; }
-    .summary-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:2px; }
-    .summary-label { color:#9ca3af; }
-    .summary-value { font-variant-numeric:tabular-nums; }
-    .summary-result-ok { color:#4ade80; }
-    .summary-result-ng { color:#f97373; }
-    input[type="number"] { background:#111827;border:1px solid #4b5563;border-radius:6px;
-                         padding:6px 8px;color:#e5e7eb;font-size:13px; width:120px; }
-    .calc-table thead th { position:static; }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 8px;
+    }
+    p {
+      margin: 4px 0 12px;
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    label {
+      font-size: 0.9rem;
+    }
+    select, input[type="number"] {
+      background-color: #020617;
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.9rem;
+    }
+    input[type="number"] {
+      width: 80px;
+    }
+    button {
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #4b5563;
+      background-color: #111827;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1f2937;
+    }
+    .summary-box {
+      margin-top: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #374151;
+      padding: 8px 10px;
+      background: #020617;
+    }
+    .summary-box h2 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .summary-row + .summary-row {
+      margin-top: 2px;
+    }
+    .summary-label {
+      color: #9ca3af;
+    }
+    .summary-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .calc-grid {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 900px) {
+      .calc-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .calc-section h2 {
+      font-size: 1rem;
+      margin: 0 0 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border-bottom: 1px solid #1f2937;
+      padding: 2px 4px;
+    }
+    th {
+      text-align: left;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    td.nowrap {
+      white-space: nowrap;
+    }
+    tfoot td {
+      border-top: none;
+      padding-top: 6px;
+    }
+    .note {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>DQ1・DQ2 アイテム・装備 所持金計算機</h1>
-    <a href="./index.html">トップに戻る</a>
-  </header>
-  <main>
-    <section>
-      <div class="controls">
-        <label>作品
-          <select id="game-select">
-            <option value="dq2">DQ2</option>
-            <option value="dq1">DQ1</option>
-          </select>
-        </label>
-        <label>現在の所持金
-          <input type="number" id="current-money" min="0" step="1" value="0" />
-        </label>
-      </div>
-      <p class="muted">
-        所持金と「買いたいもの」「売りたいもの」を入力すると、合計と足りるかどうかを自動で計算します。
-        アイテム名はプルダウンから選択できます。
-      </p>
+  <h1>DQ1・DQ2 アイテム所持金計算機</h1>
+  <p>所持金・買うもの・売るものを入力すると、買い物後の所持金と足りるかどうかを確認できます。</p>
 
-            <div class="summary-box">
-        <h2>計算結果</h2>
-        <div class="summary-row">
-          <div class="summary-label">現在の所持金</div>
-          <div class="summary-value" id="summary-current">0 G</div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-label">売却合計</div>
-          <div class="summary-value" id="summary-sell">0 G</div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-label">購入合計</div>
-          <div class="summary-value" id="summary-buy">0 G</div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-label">買い物後の所持金</div>
-          <div class="summary-value" id="summary-after">0 G</div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-label">判定</div>
-          <div class="summary-value" id="summary-result">-</div>
-        </div>
-      </div>
+  <div class="controls-row">
+    <label>作品：
+      <select id="game-select">
+        <option value="dq1">DQ1</option>
+        <option value="dq2">DQ2</option>
+      </select>
+    </label>
+    <label>現在の所持金：
+      <input type="number" id="current-gold" min="0" step="1" value="0" />
+      G
+    </label>
+  </div>
 
-<div class="calc-grid">
-        <div class="calc-block">
-          <h2>買いたいもの</h2>
-          <div class="table-wrap">
-            <table class="calc-table">
-              <thead>
-                <tr>
-                  <th>アイテム名</th>
-                  <th class="nowrap">個数</th>
-                  <th class="nowrap">単価（買値）</th>
-                  <th class="nowrap">小計</th>
-                </tr>
-              </thead>
-              <tbody id="buy-rows">
-              </tbody>
-              <tfoot>
-                <tr><td colspan="4"><button type="button" id="add-buy-row">行を追加</button></td></tr>
-              </tfoot>
-            </table>
-          </div>
-          <p class="muted">最大10行まで入力できます。買値が設定されていないアイテムは小計0として扱われます。</p>
-        </div>
+  <div class="summary-box">
+    <h2>計算結果</h2>
+    <div class="summary-row">
+      <div class="summary-label">現在の所持金</div>
+      <div class="summary-value" id="summary-current">0 G</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">売却合計</div>
+      <div class="summary-value" id="summary-sell">0 G</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">購入合計</div>
+      <div class="summary-value" id="summary-buy">0 G</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">買い物後の所持金</div>
+      <div class="summary-value" id="summary-after">0 G</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">判定</div>
+      <div class="summary-value" id="summary-result">-</div>
+    </div>
+  </div>
 
-        <div class="calc-block">
-          <h2>売りたいもの</h2>
-          <div class="table-wrap">
-            <table class="calc-table">
-              <thead>
-                <tr>
-                  <th>アイテム名</th>
-                  <th class="nowrap">個数</th>
-                  <th class="nowrap">単価（売値）</th>
-                  <th class="nowrap">小計</th>
-                </tr>
-              </thead>
-              <tbody id="sell-rows">
-              </tbody>
-              <tfoot>
-                <tr><td colspan="4"><button type="button" id="add-sell-row">行を追加</button></td></tr>
-              </tfoot>
-            </table>
-          </div>
-          <p class="muted">最大10行まで入力できます。売値が設定されていないアイテムは小計0として扱われます。</p>
-        </div>
-      </div>
-        <div class="summary-row">
-          <div class="summary-label">売却合計</div>
-          <div class="summary-value" id="summary-sell">0 G</div>
-        </div>
-        <div class="summary-row">
-          <div class="summary-label">購入合計</div>
-          <div class="summary-value" id="summary-buy">0 G</div>
-        </div>
-        <hr style="border:0;border-top:1px solid #374151;margin:6px 0;" />
-        <div class="summary-row">
-          <div class="summary-label">買い物後の所持金</div>
-          <div class="summary-value" id="summary-after">0 G</div>
-        </div>
-        <p id="summary-result" class="muted"></p>
-      </div>
-
-
+  <div class="calc-grid">
+    <section class="calc-section">
+      <h2>買うアイテム</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>アイテム</th>
+            <th>個数</th>
+            <th>単価</th>
+            <th>小計</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="buy-rows">
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">
+              <button type="button" id="add-buy-row">行を追加</button>
+              <button type="button" id="clear-buy-rows">入力をクリア</button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="note">※ 最大10行まで追加できます。</div>
     </section>
-  </main>
+
+    <section class="calc-section">
+      <h2>売るアイテム</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>アイテム</th>
+            <th>個数</th>
+            <th>単価</th>
+            <th>小計</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="sell-rows">
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">
+              <button type="button" id="add-sell-row">行を追加</button>
+              <button type="button" id="clear-sell-rows">入力をクリア</button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="note">※ 最大10行まで追加できます。</div>
+    </section>
+  </div>
 
   <script>
-    const CSV_PATHS = {
-      dq1: "data/dq1_items.csv",
-      dq2: "data/dq2_items.csv"
-    };
-
-    let currentGame = "dq2";
-    let itemsByName = new Map();
-    let buyCandidates = [];
-    let sellCandidates = [];
-
-    function formatNumber(value) {
-      const n = Number(value);
-      if (!isFinite(n)) return "0";
-      return n.toLocaleString("ja-JP");
-    }
-
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (!lines.length) return { header: [], data: [] };
-      const header = lines[0].replace(/^\ufeff/, "").split(",");
-      const data = lines.slice(1).map(line => line.split(","));
-      return { header, data };
-    }
-
-    async function loadItems(game) {
-      const path = CSV_PATHS[game];
-      const res = await fetch(path);
-      const text = await res.text();
-      const { header, data } = parseCSV(text);
-
-      const idx = Object.fromEntries(header.map((h, i) => [h, i]));
-
-      itemsByName = new Map();
-      buyCandidates = [];
-      sellCandidates = [];
-
-      for (const row of data) {
-        const name = row[idx["名前"]] || "";
-        if (!name) continue;
-
-        const buyRaw = idx["買値"] !== undefined ? (row[idx["買値"]] || "") : "";
-        const sellRaw = idx["売値"] !== undefined ? (row[idx["売値"]] || "") : "";
-
-        const buy = Number(buyRaw.replace(/,/g, ""));
-        const sell = Number(sellRaw.replace(/,/g, ""));
-
-        const item = {
-          name,
-          buy: isFinite(buy) ? buy : NaN,
-          sell: isFinite(sell) ? sell : NaN
-        };
-
-        itemsByName.set(name, item);
-
-        if (isFinite(item.buy) && item.buy > 0) {
-          buyCandidates.push(item);
-        }
-        if (isFinite(item.sell) && item.sell > 0) {
-          sellCandidates.push(item);
-        }
-      }
-
-      buyCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
-      sellCandidates.sort((a, b) => a.name.localeCompare(b.name, "ja"));
-
-      populateItemSelects();
-      recalcAll();
-    }
-
-    
     const MAX_ROWS = 10;
     const INITIAL_ROWS = 3;
 
+    let currentGame = "dq1";
+    let allItems = [];
+    let buyableItems = [];
+    let sellableItems = [];
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length <= 1) return { headers: [], rows: [] };
+      const headers = lines[0].split(",");
+      const rows = lines.slice(1)
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.split(","));
+      return { headers, rows };
+    }
+
+    async function loadItems(game) {
+      const path = game === "dq1" ? "data/dq1_items.csv" : "data/dq2_items.csv";
+      try {
+        const res = await fetch(path);
+        const text = await res.text();
+        const { headers, rows } = parseCSV(text);
+        const idxName = headers.indexOf("名前");
+        const idxBuy = headers.indexOf("買値");
+        const idxSell = headers.indexOf("売値");
+
+        allItems = [];
+        buyableItems = [];
+        sellableItems = [];
+
+        if (idxName === -1 || idxBuy === -1 || idxSell === -1) {
+          populateItemSelects();
+          recalcAll();
+          return;
+        }
+
+        for (const cols of rows) {
+          const name = cols[idxName] || "";
+          if (!name) continue;
+          const buy = Number(cols[idxBuy] || "0") || 0;
+          const sell = Number(cols[idxSell] || "0") || 0;
+          const item = { name, buy, sell };
+          allItems.push(item);
+        }
+
+        buyableItems = allItems.filter(i => i.buy > 0);
+        sellableItems = allItems.filter(i => i.sell > 0);
+
+        populateItemSelects();
+        recalcAll();
+      } catch (e) {
+        console.error("アイテム読み込みエラー:", e);
+        allItems = [];
+        buyableItems = [];
+        sellableItems = [];
+        populateItemSelects();
+        recalcAll();
+      }
+    }
+
+    function populateItemSelects() {
+      const buySelects = document.querySelectorAll(".buy-name");
+      const sellSelects = document.querySelectorAll(".sell-name");
+
+      buySelects.forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = "";
+        const emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "";
+        sel.appendChild(emptyOpt);
+        for (const item of buyableItems) {
+          const opt = document.createElement("option");
+          opt.value = item.name;
+          opt.textContent = item.name;
+          sel.appendChild(opt);
+        }
+        if (current) {
+          sel.value = current;
+        }
+      });
+
+      sellSelects.forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = "";
+        const emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "";
+        sel.appendChild(emptyOpt);
+        for (const item of sellableItems) {
+          const opt = document.createElement("option");
+          opt.value = item.name;
+          opt.textContent = item.name;
+          sel.appendChild(opt);
+        }
+        if (current) {
+          sel.value = current;
+        }
+      });
+    }
+
     function addBuyRow() {
-      const buyBody = document.getElementById("buy-rows");
-      if (buyBody.querySelectorAll("tr").length >= MAX_ROWS) return;
+      const body = document.getElementById("buy-rows");
+      if (body.querySelectorAll("tr").length >= MAX_ROWS) return;
 
       const tr = document.createElement("tr");
 
@@ -270,12 +353,30 @@
       tdSub.className = "buy-subtotal nowrap";
       tr.appendChild(tdSub);
 
-      buyBody.appendChild(tr);
+      const tdOp = document.createElement("td");
+      const btnClear = document.createElement("button");
+      btnClear.type = "button";
+      btnClear.textContent = "行クリア";
+      btnClear.addEventListener("click", () => {
+        const sel = tr.querySelector(".buy-name");
+        const qty = tr.querySelector(".buy-qty");
+        const unit = tr.querySelector(".buy-unit");
+        const sub = tr.querySelector(".buy-subtotal");
+        if (sel) sel.value = "";
+        if (qty) qty.value = "";
+        if (unit) unit.textContent = "";
+        if (sub) sub.textContent = "";
+        recalcAll();
+      });
+      tdOp.appendChild(btnClear);
+      tr.appendChild(tdOp);
+
+      body.appendChild(tr);
     }
 
     function addSellRow() {
-      const sellBody = document.getElementById("sell-rows");
-      if (sellBody.querySelectorAll("tr").length >= MAX_ROWS) return;
+      const body = document.getElementById("sell-rows");
+      if (body.querySelectorAll("tr").length >= MAX_ROWS) return;
 
       const tr = document.createElement("tr");
 
@@ -304,7 +405,57 @@
       tdSub.className = "sell-subtotal nowrap";
       tr.appendChild(tdSub);
 
-      sellBody.appendChild(tr);
+      const tdOp = document.createElement("td");
+      const btnClear = document.createElement("button");
+      btnClear.type = "button";
+      btnClear.textContent = "行クリア";
+      btnClear.addEventListener("click", () => {
+        const sel = tr.querySelector(".sell-name");
+        const qty = tr.querySelector(".sell-qty");
+        const unit = tr.querySelector(".sell-unit");
+        const sub = tr.querySelector(".sell-subtotal");
+        if (sel) sel.value = "";
+        if (qty) qty.value = "";
+        if (unit) unit.textContent = "";
+        if (sub) sub.textContent = "";
+        recalcAll();
+      });
+      tdOp.appendChild(btnClear);
+      tr.appendChild(tdOp);
+
+      body.appendChild(tr);
+    }
+
+    function clearBuyRows() {
+      const body = document.getElementById("buy-rows");
+      const rows = body.querySelectorAll("tr");
+      rows.forEach(tr => {
+        const sel = tr.querySelector(".buy-name");
+        const qty = tr.querySelector(".buy-qty");
+        const unit = tr.querySelector(".buy-unit");
+        const sub = tr.querySelector(".buy-subtotal");
+        if (sel) sel.value = "";
+        if (qty) qty.value = "";
+        if (unit) unit.textContent = "";
+        if (sub) sub.textContent = "";
+      });
+      recalcAll();
+    }
+
+    function clearSellRows() {
+      const body = document.getElementById("sell-rows");
+      const rows = body.querySelectorAll("tr");
+      rows.forEach(tr => {
+        const sel = tr.querySelector(".sell-name");
+        const qty = tr.querySelector(".sell-qty");
+        const unit = tr.querySelector(".sell-unit");
+        const sub = tr.querySelector(".sell-subtotal");
+        if (sel) sel.value = "";
+        if (qty) qty.value = "";
+        if (unit) unit.textContent = "";
+        if (sub) sub.textContent = "";
+      });
+      recalcAll();
     }
 
     function setupRows() {
@@ -320,6 +471,9 @@
 
       const addBuyBtn = document.getElementById("add-buy-row");
       const addSellBtn = document.getElementById("add-sell-row");
+      const clearBuyBtn = document.getElementById("clear-buy-rows");
+      const clearSellBtn = document.getElementById("clear-sell-rows");
+
       if (addBuyBtn) {
         addBuyBtn.onclick = () => {
           addBuyRow();
@@ -334,155 +488,110 @@
           recalcAll();
         };
       }
+      if (clearBuyBtn) {
+        clearBuyBtn.onclick = () => clearBuyRows();
+      }
+      if (clearSellBtn) {
+        clearSellBtn.onclick = () => clearSellRows();
+      }
     }
 
-function populateItemSelects() {
-      const buySelects = document.querySelectorAll(".buy-name");
-      const sellSelects = document.querySelectorAll(".sell-name");
+    function findItemByName(name, forBuy) {
+      if (!name) return null;
+      const list = forBuy ? buyableItems : sellableItems;
+      return list.find(i => i.name === name) || null;
+    }
 
-      for (const sel of buySelects) {
-        const current = sel.value;
-        sel.innerHTML = "";
-        const emptyOpt = document.createElement("option");
-        emptyOpt.value = "";
-        emptyOpt.textContent = "（選択してください）";
-        sel.appendChild(emptyOpt);
-        for (const item of buyCandidates) {
-          const opt = document.createElement("option");
-          opt.value = item.name;
-          opt.textContent = item.name;
-          sel.appendChild(opt);
-        }
-        if (current) sel.value = current;
-      }
-
-      for (const sel of sellSelects) {
-        const current = sel.value;
-        sel.innerHTML = "";
-        const emptyOpt = document.createElement("option");
-        emptyOpt.value = "";
-        emptyOpt.textContent = "（選択してください）";
-        sel.appendChild(emptyOpt);
-        for (const item of sellCandidates) {
-          const opt = document.createElement("option");
-          opt.value = item.name;
-          opt.textContent = item.name;
-          sel.appendChild(opt);
-        }
-        if (current) sel.value = current;
-      }
+    function formatGold(n) {
+      const value = Number.isFinite(n) ? n : 0;
+      return value.toLocaleString("ja-JP") + " G";
     }
 
     function recalcAll() {
-      const currentMoneyInput = document.getElementById("current-money");
-      const currentMoney = Number(currentMoneyInput.value || "0");
+      const currentGoldInput = document.getElementById("current-gold");
+      const currentGold = Number(currentGoldInput.value || "0") || 0;
 
       let buyTotal = 0;
       let sellTotal = 0;
 
       // 買う側
-      const buyBody = document.getElementById("buy-rows");
-      for (const tr of buyBody.querySelectorAll("tr")) {
-        const nameInput = tr.querySelector(".buy-name");
+      const buyRows = document.querySelectorAll("#buy-rows tr");
+      buyRows.forEach(tr => {
+        const sel = tr.querySelector(".buy-name");
         const qtyInput = tr.querySelector(".buy-qty");
         const unitCell = tr.querySelector(".buy-unit");
         const subCell = tr.querySelector(".buy-subtotal");
 
-        const name = (nameInput.value || "").trim();
-        const qty = Number(qtyInput.value || "0");
-
-        if (!name || !qty || qty <= 0) {
-          unitCell.textContent = "";
-          subCell.textContent = "";
-          continue;
-        }
-
-        const item = itemsByName.get(name);
-        if (!item || !isFinite(item.buy) || item.buy <= 0) {
-          unitCell.textContent = "-";
-          subCell.textContent = "";
-          continue;
-        }
-
-        const unit = item.buy;
+        const name = sel ? sel.value : "";
+        const qty = Number(qtyInput && qtyInput.value ? qtyInput.value : "0") || 0;
+        const item = findItemByName(name, true);
+        const unit = item ? item.buy : 0;
         const sub = unit * qty;
-        buyTotal += sub;
 
-        unitCell.textContent = formatNumber(unit);
-        subCell.textContent = formatNumber(sub);
-      }
+        if (unitCell) unitCell.textContent = unit ? formatGold(unit).replace(" G", "") + " G" : "";
+        if (subCell) subCell.textContent = sub ? formatGold(sub) : "";
+
+        buyTotal += sub;
+      });
 
       // 売る側
-      const sellBody = document.getElementById("sell-rows");
-      for (const tr of sellBody.querySelectorAll("tr")) {
-        const nameInput = tr.querySelector(".sell-name");
+      const sellRows = document.querySelectorAll("#sell-rows tr");
+      sellRows.forEach(tr => {
+        const sel = tr.querySelector(".sell-name");
         const qtyInput = tr.querySelector(".sell-qty");
         const unitCell = tr.querySelector(".sell-unit");
         const subCell = tr.querySelector(".sell-subtotal");
 
-        const name = (nameInput.value || "").trim();
-        const qty = Number(qtyInput.value || "0");
-
-        if (!name || !qty || qty <= 0) {
-          unitCell.textContent = "";
-          subCell.textContent = "";
-          continue;
-        }
-
-        const item = itemsByName.get(name);
-        if (!item || !isFinite(item.sell) || item.sell <= 0) {
-          unitCell.textContent = "-";
-          subCell.textContent = "";
-          continue;
-        }
-
-        const unit = item.sell;
+        const name = sel ? sel.value : "";
+        const qty = Number(qtyInput && qtyInput.value ? qtyInput.value : "0") || 0;
+        const item = findItemByName(name, false);
+        const unit = item ? item.sell : 0;
         const sub = unit * qty;
+
+        if (unitCell) unitCell.textContent = unit ? formatGold(unit).replace(" G", "") + " G" : "";
+        if (subCell) subCell.textContent = sub ? formatGold(sub) : "";
+
         sellTotal += sub;
+      });
 
-        unitCell.textContent = formatNumber(unit);
-        subCell.textContent = formatNumber(sub);
-      }
+      const usable = currentGold + sellTotal;
+      const after = usable - buyTotal;
 
-      const totalFunds = currentMoney + sellTotal;
-      const after = totalFunds - buyTotal;
+      document.getElementById("summary-current").textContent = formatGold(currentGold);
+      document.getElementById("summary-sell").textContent = formatGold(sellTotal);
+      document.getElementById("summary-buy").textContent = formatGold(buyTotal);
+      document.getElementById("summary-after").textContent = formatGold(after);
 
-      document.getElementById("summary-current").textContent = formatNumber(currentMoney) + " G";
-      document.getElementById("summary-sell").textContent    = formatNumber(sellTotal) + " G";
-      document.getElementById("summary-buy").textContent     = formatNumber(buyTotal) + " G";
-      document.getElementById("summary-after").textContent   = formatNumber(after) + " G";
-
-      const result = document.getElementById("summary-result");
-      result.classList.remove("summary-result-ok", "summary-result-ng");
-
+      let resultText = "-";
       if (buyTotal === 0) {
-        result.textContent = "買いたいものが入力されていません。";
-        return;
-      }
-
-      if (after >= 0) {
-        result.textContent = "購入可能です。買い物後の所持金は " + formatNumber(after) + " G です。";
-        result.classList.add("summary-result-ok");
+        if (sellTotal === 0) {
+          resultText = "買い物なし";
+        } else {
+          resultText = "売却のみ（買い物なし）";
+        }
       } else {
-        const lack = -after;
-        result.textContent = "現在の所持金と売却額を合わせても " + formatNumber(lack) + " G 不足しています。";
-        result.classList.add("summary-result-ng");
+        if (usable >= buyTotal) {
+          resultText = "購入可能";
+        } else {
+          const lack = buyTotal - usable;
+          resultText = "あと " + lack.toLocaleString("ja-JP") + " G 足りません";
+        }
       }
+      document.getElementById("summary-result").textContent = resultText;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      setupRows();
       const gameSelect = document.getElementById("game-select");
-      const moneyInput = document.getElementById("current-money");
+      const currentGoldInput = document.getElementById("current-gold");
 
       gameSelect.addEventListener("change", () => {
         currentGame = gameSelect.value;
         loadItems(currentGame);
       });
 
-      moneyInput.addEventListener("input", recalcAll);
+      currentGoldInput.addEventListener("input", recalcAll);
 
-      // 初期はDQ2
+      setupRows();
       loadItems(currentGame);
     });
   </script>
