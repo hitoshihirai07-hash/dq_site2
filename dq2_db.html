@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<title>ドラゴンクエストII データベース</title>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<style>
+  <meta charset="UTF-8" />
+  <title>ドラゴンクエストII データベース</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
     body { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
            background-color:#111827;color:#e5e7eb;margin:0;padding:0; }
     header { background:#1f2937;padding:12px 16px;display:flex;align-items:center;
@@ -39,112 +38,116 @@
   </style>
 </head>
 <body>
-<header>
-<h1>ドラゴンクエストII データベース</h1>
-<a href="index.html">← トップに戻る</a>
-</header>
-<main>
-<div class="tabs">
-<button class="tab-btn active" data-target="items">アイテム・装備</button>
-<button class="tab-btn" data-target="spells">呪文・特技</button>
-<button class="tab-btn" data-target="monsters">モンスター</button>
-</div>
-<section aria-label="アイテム・装備" class="tab-panel active" id="items">
-<div class="controls">
-<label>キーワード検索
-          <input id="items-search" placeholder="名前・効果・入手方法など" type="search"/>
-</label>
-<label>種別フィルタ
+  <header>
+    <h1>ドラゴンクエストII データベース</h1>
+    <a href="index.html">← トップに戻る</a>
+  </header>
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-target="items">アイテム・装備</button>
+      <button class="tab-btn" data-target="spells">呪文・特技</button>
+      <button class="tab-btn" data-target="monsters">モンスター</button>
+    </div>
+
+    <section id="items" class="tab-panel active" aria-label="アイテム・装備">
+      <div class="controls">
+        <label>キーワード検索
+          <input type="search" id="items-search" placeholder="名前・効果・入手方法など" />
+        </label>
+        <label>種別フィルタ
           <select id="items-kind">
-<option value="">すべて</option>
-<option value="道具">道具</option>
-<option value="装備">装備（全部）</option>
-<option value="装備盾">装備盾</option>
-<option value="装備兜">装備兜</option>
-<option value="装備服">装備服</option>
-<option value="装備装飾品">装備装飾品</option>
-</select>
-</label>
-</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>種別</th>
-<th>名前</th>
-<th class="nowrap">攻撃力</th>
-<th class="nowrap">守備力</th>
-<th class="nowrap">買値</th>
-<th class="nowrap">売値</th>
-<th>効果</th>
-<th>入手方法</th>
-<th>装備可能</th>
-<th>備考</th>
-</tr>
-</thead>
-<tbody id="items-body"></tbody>
-</table>
-</div>
-<p class="muted">※ 装備可能・備考はCSVの列があれば表示されます。無ければ空欄になります。</p>
-</section>
-<section aria-label="呪文・特技" class="tab-panel" id="spells">
-<div class="controls">
-<label>キーワード検索
-          <input id="spells-search" placeholder="名前・効果・必要技など" type="search"/>
-</label>
-<label>種別フィルタ
+            <option value="">すべて</option>
+            <option value="道具">道具</option>
+            <option value="装備">装備（全部）</option>
+            <option value="装備盾">装備盾</option>
+            <option value="装備兜">装備兜</option>
+            <option value="装備服">装備服</option>
+            <option value="装備装飾品">装備装飾品</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>種別</th>
+              <th>名前</th>
+              <th class="nowrap">攻撃力</th>
+              <th class="nowrap">守備力</th>
+              <th class="nowrap">買値</th>
+              <th class="nowrap">売値</th>
+              <th>効果</th>
+              <th>入手方法</th>
+              <th>装備可能</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="items-body"></tbody>
+        </table>
+      </div>
+      <p class="muted">※ 装備可能・備考はCSVの列があれば表示されます。無ければ空欄になります。</p>
+    </section>
+
+    <section id="spells" class="tab-panel" aria-label="呪文・特技">
+      <div class="controls">
+        <label>キーワード検索
+          <input type="search" id="spells-search" placeholder="名前・効果・必要技など" />
+        </label>
+        <label>種別フィルタ
           <select id="spells-kind">
-<option value="">すべて</option>
-<option value="呪文">呪文</option>
-<option value="特技">特技</option>
-<option value="超絶技">超絶技</option>
-</select>
-</label>
-</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>種別</th>
-<th>名前</th>
-<th class="nowrap">消費MP</th>
-<th class="nowrap">ダメージ(通常)</th>
-<th class="nowrap">ダメージ(高かしこさ)</th>
-<th class="nowrap">倍率</th>
-<th>効果</th>
-<th class="nowrap">習得Lv</th>
-<th>巻物</th>
-<th>備考</th>
-</tr>
-</thead>
-<tbody id="spells-body"></tbody>
-</table>
-</div>
-</section>
-<section aria-label="モンスター" class="tab-panel" id="monsters">
-<div class="controls">
-<label>キーワード検索
-          <input id="monsters-search" placeholder="名前・出現エリア・ドロップなど" type="search"/>
-</label>
-</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>名前</th>
-<th>出現エリア</th>
-<th class="nowrap">HP</th>
-<th class="nowrap">経験値</th>
-<th class="nowrap">ゴールド</th>
-<th>ドロップ</th>
-</tr>
-</thead>
-<tbody id="monsters-body"></tbody>
-</table>
-</div>
-</section>
-</main>
-<script>
+            <option value="">すべて</option>
+            <option value="呪文">呪文</option>
+            <option value="特技">特技</option>
+            <option value="超絶技">超絶技</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>種別</th>
+              <th>名前</th>
+              <th class="nowrap">消費MP</th>
+              <th class="nowrap">ダメージ(通常)</th>
+              <th class="nowrap">ダメージ(高かしこさ)</th>
+              <th class="nowrap">倍率</th>
+              <th>効果</th>
+              <th class="nowrap">習得Lv</th>
+              <th>巻物</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="spells-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="monsters" class="tab-panel" aria-label="モンスター">
+      <div class="controls">
+        <label>キーワード検索
+          <input type="search" id="monsters-search" placeholder="名前・出現エリア・ドロップなど" />
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>出現エリア</th>
+              <th class="nowrap">HP</th>
+              <th class="nowrap">経験値</th>
+              <th class="nowrap">ゴールド</th>
+              <th>ドロップ</th>
+            </tr>
+          </thead>
+          <tbody id="monsters-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
     const CSV_ITEMS = "data/dq2_items.csv";
     const CSV_SPELLS = "data/dq2_spells.csv";
     const CSV_MONSTERS = "data/dq2_monsters.csv";
@@ -310,7 +313,6 @@
       applyFilter();
     }
 
-    
     async function renderSpells() {
       const { header, data } = await loadCSV(CSV_SPELLS);
       const idx = Object.fromEntries(header.map((h, i) => [h, i]));
@@ -347,14 +349,20 @@
           // 表示用ダメージ文字列
           let dmgNormal = "";
           if (baseMin || baseMax) {
-            if (baseMin && baseMax) dmgNormal = `${baseMin}〜${baseMax}`;
-            else dmgNormal = baseMin || baseMax;
+            if (baseMin && baseMax) {
+              dmgNormal = `${baseMin}〜${baseMax}`;
+            } else {
+              dmgNormal = baseMin || baseMax;
+            }
           }
 
           let dmgHigh = "";
           if (hiMin || hiMax) {
-            if (hiMin && hiMax) dmgHigh = `${hiMin}〜${hiMax}`;
-            else dmgHigh = hiMin || hiMax;
+            if (hiMin && hiMax) {
+              dmgHigh = `${hiMin}〜${hiMax}`;
+            } else {
+              dmgHigh = hiMin || hiMax;
+            }
           }
 
           let multText = "";
@@ -439,14 +447,7 @@
       kindSelect.addEventListener("change", applyFilter);
       applyFilter();
     }
-
-
-      searchInput.addEventListener("input", applyFilter);
-      kindSelect.addEventListener("change", applyFilter);
-      applyFilter();
-    }
-
-    async function renderMonsters() {
+async function renderMonsters() {
       const { header, data } = await loadCSV(CSV_MONSTERS);
       const idx = Object.fromEntries(header.map((h, i) => [h, i]));
       const tbody = document.getElementById("monsters-body");
