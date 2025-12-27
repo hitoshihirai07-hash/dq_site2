@@ -107,6 +107,9 @@
               <th>種別</th>
               <th>名前</th>
               <th class="nowrap">消費MP</th>
+              <th class="nowrap">ダメージ(通常)</th>
+              <th class="nowrap">ダメージ(高かしこさ)</th>
+              <th class="nowrap">倍率</th>
               <th>効果</th>
               <th class="nowrap">習得Lv</th>
               <th>巻物</th>
@@ -317,17 +320,61 @@
         for (const row of data) {
           let kind   = row[idx["種別"]] || "";
           const name = row[idx["名前"]] || "";
-          const mp   = row[idx["消費MP"]] || "";
-          const effect = row[idx["効果"]] || "";
-          const learnLv = row[idx["習得レベル"]] || "";
-          const scroll  = row[idx["巻物取得可能"]] || "";
-          const note    = row[idx["備考"]] || "";
+          const mp   = idx["消費MP"] !== undefined ? (row[idx["消費MP"]] || "") : "";
+          const effect = idx["効果"] !== undefined ? (row[idx["効果"]] || "") : "";
+          const learnLv = idx["習得レベル"] !== undefined ? (row[idx["習得レベル"]] || "") : "";
+          const scroll  = idx["巻物取得可能"] !== undefined ? (row[idx["巻物取得可能"]] || "") : "";
+          const note    = idx["備考"] !== undefined ? (row[idx["備考"]] || "") : "";
+
+          const baseMin = idx["基礎最小"] !== undefined ? (row[idx["基礎最小"]] || "") : "";
+          const baseMax = idx["基礎最大"] !== undefined ? (row[idx["基礎最大"]] || "") : "";
+          const hiMin   = idx["高賢さ最小"] !== undefined ? (row[idx["高賢さ最小"]] || "") : "";
+          const hiMax   = idx["高賢さ最大"] !== undefined ? (row[idx["高賢さ最大"]] || "") : "";
+          const mult    = idx["倍率"] !== undefined ? (row[idx["倍率"]] || "") : "";
+          const specialMult = idx["専用"] !== undefined ? (row[idx["専用"]] || "") : "";
 
           const kindForDisplay = kind || (note && note.includes("必要技") ? "超絶技" : kind);
 
           if (kindFilter && kindForDisplay !== kindFilter) continue;
 
-          const fullText = [kindForDisplay, name, mp, effect, learnLv, scroll, note].join(" ");
+          let dmgNormal = "";
+          if (baseMin || baseMax) {
+            if (baseMin && baseMax) {
+              dmgNormal = `${baseMin}〜${baseMax}`;
+            } else {
+              dmgNormal = baseMin || baseMax;
+            }
+          }
+
+          let dmgHigh = "";
+          if (hiMin || hiMax) {
+            if (hiMin && hiMax) {
+              dmgHigh = `${hiMin}〜${hiMax}`;
+            } else {
+              dmgHigh = hiMin || hiMax;
+            }
+          }
+
+          let multText = "";
+          if (mult || specialMult) {
+            const parts = [];
+            if (mult) parts.push(`通常${mult}倍`);
+            if (specialMult) parts.push(`特効${specialMult}倍`);
+            multText = parts.join(" / ");
+          }
+
+          const fullText = [
+            kindForDisplay,
+            name,
+            mp,
+            dmgNormal,
+            dmgHigh,
+            multText,
+            effect,
+            learnLv,
+            scroll,
+            note
+          ].join(" ");
           if (!textMatch(fullText, kw)) continue;
 
           const tr = document.createElement("tr");
@@ -349,6 +396,21 @@
           tdMp.className = "nowrap";
           tdMp.textContent = mp;
           tr.appendChild(tdMp);
+
+          const tdDmgN = document.createElement("td");
+          tdDmgN.className = "nowrap";
+          tdDmgN.textContent = dmgNormal;
+          tr.appendChild(tdDmgN);
+
+          const tdDmgH = document.createElement("td");
+          tdDmgH.className = "nowrap";
+          tdDmgH.textContent = dmgHigh;
+          tr.appendChild(tdDmgH);
+
+          const tdMult = document.createElement("td");
+          tdMult.className = "nowrap";
+          tdMult.textContent = multText;
+          tr.appendChild(tdMult);
 
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(effect);
@@ -375,8 +437,7 @@
       kindSelect.addEventListener("change", applyFilter);
       applyFilter();
     }
-
-    async function renderMonsters() {
+async function renderMonsters() {
       const { header, data } = await loadCSV(CSV_MONSTERS);
       const idx = Object.fromEntries(header.map((h, i) => [h, i]));
       const tbody = document.getElementById("monsters-body");
