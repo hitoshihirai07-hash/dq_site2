@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>DQ2 せいすい・トヘロス適正レベル一覧 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
+  <title>DQ1・DQ2 せいすい・トヘロス適正レベル一覧 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
 body {
@@ -77,6 +77,38 @@ tbody tr:nth-child(even) {
   }
 }
 
+/* 作品切替 */
+.work-switch {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.work-switch button {
+  border: 1px solid #d4b27c;
+  background: #fff;
+  color: #333;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.work-switch button.active {
+  background: #f2e7d7;
+  font-weight: 600;
+}
+.work-switch button:focus {
+  outline: 2px solid #1f5faa;
+  outline-offset: 2px;
+}
+
+/* 作品別見出し行 */
+.group-header td {
+  background: #ead7b6;
+  font-weight: 700;
+  border-color: #d4b27c;
+}
+
   </style>
 </head>
 <body>
@@ -91,14 +123,26 @@ tbody tr:nth-child(even) {
   <section>
     <p class="note">
       せいすい／トヘロスを使用したときに、先頭キャラクターのレベルが条件を満たしていれば敵が出現しなくなるエリアの目安です。<br>
-      現在はDQ2フィールド／ダンジョンのみを掲載しています。<br>
+      DQ1・DQ2のフィールド／ダンジョンを掲載しています。<br>
       ※判定は先頭キャラのレベルのみ参照されます。後列のレベルが条件を満たしていても、先頭が足りない場合は敵が出現します。
     </p>
   </section>
 
   <section id="search-section">
     <h2>絞り込み</h2>
-    <div class="search-form" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+    
+    <div class="work-switch" aria-label="作品の切り替え">
+      <button type="button" id="btn-work-all" class="active">すべて</button>
+      <button type="button" id="btn-work-dq1">DQ1</button>
+      <button type="button" id="btn-work-dq2">DQ2</button>
+    </div>
+    <div style="margin-bottom: 8px;">
+      <label style="font-size:0.9rem;">
+        <input type="checkbox" id="split-by-work" checked>
+        作品別に分けて表示（作品が「すべて」のとき）
+      </label>
+    </div>
+<div class="search-form" style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
       <label>作品<br>
         <select id="filter-work">
           <option value="">すべて</option>
@@ -215,7 +259,8 @@ tbody tr:nth-child(even) {
       });
     }
 
-    function renderTable(data) {
+    
+    function renderTable(data, options) {
       const tbody = document.querySelector("#encounter-table tbody");
       tbody.innerHTML = "";
 
@@ -230,6 +275,56 @@ tbody tr:nth-child(even) {
         return;
       }
 
+      const split = options && options.splitByWork;
+      const workFilter = options && options.workFilter;
+
+      if (split && !workFilter) {
+        // 作品ごとに見出し行を挟んで表示
+        const order = { "DQ1": 1, "DQ2": 2 };
+        const groups = new Map();
+        data.forEach(function(r) {
+          const key = r.work || "（未設定）";
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
+        });
+
+        Array.from(groups.keys()).sort(function(a, b) {
+          const oa = order[a] || 99;
+          const ob = order[b] || 99;
+          if (oa !== ob) return oa - ob;
+          return a.localeCompare(b, "ja");
+        }).forEach(function(workName) {
+          const headerTr = document.createElement("tr");
+          headerTr.className = "group-header";
+          const headerTd = document.createElement("td");
+          headerTd.colSpan = 5;
+          headerTd.textContent = workName;
+          headerTr.appendChild(headerTd);
+          tbody.appendChild(headerTr);
+
+          groups.get(workName).forEach(function(r) {
+            const tr = document.createElement("tr");
+
+            function append(text) {
+              const td = document.createElement("td");
+              td.textContent = text;
+              tr.appendChild(td);
+            }
+
+            append(r.no);
+            append(r.work);
+            append(r.type);
+            append(r.place);
+            append(r.level);
+
+            tbody.appendChild(tr);
+          });
+        });
+
+        return;
+      }
+
+      // 通常表示
       data.forEach(function(r) {
         const tr = document.createElement("tr");
 
@@ -249,14 +344,39 @@ tbody tr:nth-child(even) {
       });
     }
 
-    function updateSummary(data, allCount) {
+
+    
+    function updateSummary(data, allCount, options) {
       const summary = document.getElementById("result-summary");
+      const split = options && options.splitByWork;
+      const workFilter = options && options.workFilter;
+
       if (!data.length) {
         summary.textContent = "0件（全" + allCount + "件中）";
-      } else {
-        summary.textContent = data.length + "件表示中（全" + allCount + "件中）";
+        return;
       }
+
+      if (split && !workFilter) {
+        const counts = {};
+        data.forEach(function(r) {
+          const k = r.work || "（未設定）";
+          counts[k] = (counts[k] || 0) + 1;
+        });
+        const order = { "DQ1": 1, "DQ2": 2 };
+        const parts = Object.keys(counts).sort(function(a, b) {
+          const oa = order[a] || 99;
+          const ob = order[b] || 99;
+          if (oa !== ob) return oa - ob;
+          return a.localeCompare(b, "ja");
+        }).map(function(k) { return k + "：" + counts[k] + "件"; });
+
+        summary.textContent = parts.join(" / ") + "（全" + allCount + "件中）";
+        return;
+      }
+
+      summary.textContent = data.length + "件表示中（全" + allCount + "件中）";
     }
+
 
     function applyFilter(allData) {
       const workSelect = document.getElementById("filter-work");
@@ -264,6 +384,8 @@ tbody tr:nth-child(even) {
       const placeInput = document.getElementById("filter-place");
       const levelInput = document.getElementById("filter-level");
       const levelMode = document.getElementById("level-mode");
+      const splitByWorkEl = document.getElementById("split-by-work");
+      const splitByWork = !!(splitByWorkEl && splitByWorkEl.checked);
 
       const work = String(workSelect.value || "").trim();
       const type = String(typeSelect.value || "").trim();
@@ -302,8 +424,16 @@ tbody tr:nth-child(even) {
         return true;
       });
 
-      // No順にソート
+      
+      // ソート（作品「すべて」かつ「作品別に分けて表示」の場合は作品→No、それ以外はNo）
+      const order = { "DQ1": 1, "DQ2": 2 };
       filtered.sort(function(a, b) {
+        if (!work && splitByWork) {
+          const oa = order[a.work] || 99;
+          const ob = order[b.work] || 99;
+          if (oa !== ob) return oa - ob;
+          if (a.work !== b.work) return a.work.localeCompare(b.work, "ja");
+        }
         const na = Number(a.no);
         const nb = Number(b.no);
         if (Number.isFinite(na) && Number.isFinite(nb)) {
@@ -312,8 +442,9 @@ tbody tr:nth-child(even) {
         return a.no.localeCompare(b.no, "ja");
       });
 
-      renderTable(filtered);
-      updateSummary(filtered, allData.length);
+      renderTable(filtered, { splitByWork: splitByWork, workFilter: work });
+      updateSummary(filtered, allData.length, { splitByWork: splitByWork, workFilter: work });
+
     }
 
     (function init() {
@@ -330,10 +461,49 @@ tbody tr:nth-child(even) {
         }
 
         setupFilters(data);
-        renderTable(data);
-        updateSummary(data, data.length);
+        renderTable(data, { splitByWork: true, workFilter: '' });
+        updateSummary(data, data.length, { splitByWork: true, workFilter: '' });
 
         document.getElementById("filter-button").addEventListener("click", function() {
+          applyFilter(data);
+        });
+
+        // 作品切替ボタン
+        function setActiveButton(which) {
+          const allBtn = document.getElementById("btn-work-all");
+          const dq1Btn = document.getElementById("btn-work-dq1");
+          const dq2Btn = document.getElementById("btn-work-dq2");
+          [allBtn, dq1Btn, dq2Btn].forEach(function(b){ if (b) b.classList.remove("active"); });
+          if (which === "DQ1" && dq1Btn) dq1Btn.classList.add("active");
+          else if (which === "DQ2" && dq2Btn) dq2Btn.classList.add("active");
+          else if (allBtn) allBtn.classList.add("active");
+        }
+
+        document.getElementById("btn-work-all").addEventListener("click", function() {
+          document.getElementById("filter-work").value = "";
+          setActiveButton("ALL");
+          applyFilter(data);
+        });
+        document.getElementById("btn-work-dq1").addEventListener("click", function() {
+          document.getElementById("filter-work").value = "DQ1";
+          setActiveButton("DQ1");
+          applyFilter(data);
+        });
+        document.getElementById("btn-work-dq2").addEventListener("click", function() {
+          document.getElementById("filter-work").value = "DQ2";
+          setActiveButton("DQ2");
+          applyFilter(data);
+        });
+
+        // 絞り込みの作品を直接変えたときもボタン表示を同期
+        document.getElementById("filter-work").addEventListener("change", function() {
+          const v = String(this.value || "").trim();
+          if (v === "DQ1" || v === "DQ2") setActiveButton(v);
+          else setActiveButton("ALL");
+        });
+
+        // 作品別表示のON/OFF
+        document.getElementById("split-by-work").addEventListener("change", function() {
           applyFilter(data);
         });
 
