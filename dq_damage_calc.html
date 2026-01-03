@@ -7,39 +7,39 @@
   <link rel="stylesheet" href="theme.css" />
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
-    .card { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 14px; margin: 12px 0; background: rgba(0,0,0,.12); }
-    .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
-    .col-12{grid-column: span 12;}
-    .col-6{grid-column: span 6;}
-    .col-4{grid-column: span 4;}
-    .col-3{grid-column: span 3;}
-    .col-2{grid-column: span 2;}
+    .dqdc-wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .dqdc-card { border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 14px; margin: 12px 0; background: rgba(0,0,0,.06); }
+    .dqdc-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
+    .dqdc-col-12{grid-column: span 12;}
+    .dqdc-col-6{grid-column: span 6;}
+    .dqdc-col-4{grid-column: span 4;}
+    .dqdc-col-3{grid-column: span 3;}
+    .dqdc-col-2{grid-column: span 2;}
     label { display:block; font-size: 13px; opacity:.9; margin-bottom:6px; }
-    input, select, button { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.2); color: inherit; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.65); color: inherit; }
     input[type="checkbox"]{ width:auto; }
     button { cursor: pointer; }
-    .muted { opacity: .75; font-size: 13px; }
+    .dqdc-muted { opacity: .75; font-size: 13px; }
     .pill { display:inline-block; padding: 4px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; font-size: 12px; opacity:.9; }
-    .out { font-size: 20px; font-weight: 700; }
-    .out small{ font-size: 13px; font-weight: 500; opacity:.8; }
+    .dqdc-out { font-size: 20px; font-weight: 700; }
+    .dqdc-out small{ font-size: 13px; font-weight: 500; opacity:.8; }
     table { width:100%; border-collapse: collapse; }
     th, td { border-bottom: 1px solid rgba(255,255,255,.12); padding: 8px; font-size: 13px; text-align:left; vertical-align: top; }
     .btn-row{ display:flex; gap:6px; margin-top:6px; }
     .btn-mini{ width:auto; padding:6px 10px; border-radius:999px; font-size:12px; }
-    .actions { display:flex; gap: 8px; flex-wrap: wrap; }
-    .actions button { width: auto; }
-    .right { text-align:right; }
+    .dqdc-actions { display:flex; gap: 8px; flex-wrap: wrap; }
+    .dqdc-actions button { width: auto; }
+    .dqdc-right { text-align:right; }
   </style>
 </head>
 <body>
-  <main class="wrap page-main">
+  <main class="dqdc-wrap page-main">
     <h1>DQI・Ⅱダメージ計算</h1>
-<section class="card">
+<section class="dqdc-card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">入力</h2>
 
-      <div class="row">
-        <div class="col-3">
+      <div class="dqdc-grid">
+        <div class="dqdc-col-3">
           <label>作品</label>
           <select id="game">
             <option value="DQ1">DQ1</option>
@@ -47,7 +47,7 @@
           </select>
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>ゲームモード</label>
           <select id="mode">
             <option value="バッチリぼうけん">バッチリぼうけん</option>
@@ -57,7 +57,7 @@
 
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>敵（任意）</label>
           <select id="enemy">
             <option value="">（未選択）</option>
@@ -66,12 +66,12 @@
 
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>敵の防御</label>
           <input id="def" type="number" inputmode="numeric" placeholder="例：499" />
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>キャラ（任意）</label>
           <select id="chara">
             <option value="">（未選択）</option>
@@ -85,17 +85,17 @@
 
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>LV</label>
           <input id="lv" type="number" inputmode="numeric" placeholder="例：40" />
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>運の良さ</label>
           <input id="luck" type="number" inputmode="numeric" placeholder="例：55" />
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>運基準</label>
           <select id="luckBand">
             <option value="auto">自動</option>
@@ -108,12 +108,12 @@
 
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>攻撃</label>
           <input id="atk" type="number" inputmode="numeric" placeholder="例：384" />
         </div>
 
-        <div class="col-3">
+        <div class="dqdc-col-3">
           <label>技（任意）</label>
           <select id="skill">
             <option value="" data-mult="1">通常攻撃（倍率1.0）</option>
@@ -122,7 +122,7 @@
 
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>技倍率</label>
           
           <input id="skillMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.6" value="1" />
@@ -133,7 +133,7 @@
 
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>バイキルト</label>
           <label style="display:flex;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(0,0,0,.2);">
             <input id="bikilt" type="checkbox" />
@@ -141,7 +141,7 @@
           </label>
         </div>
 
-        <div class="col-4">
+        <div class="dqdc-col-4">
           <label>ちからため / 超ちからため / おうえん</label>
           <select id="tame">
             <option value="none">なし</option>
@@ -153,19 +153,19 @@
 
         </div>
 
-        <div class="col-2">
+        <div class="dqdc-col-2">
           <label>手動倍率（任意）</label>
           <input id="manualMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.2" value="1" />
         </div>
 
-        <div class="col-4">
+        <div class="dqdc-col-4">
           <label>ルカニ/スカラ段階（-6〜+6）</label>
           <select id="defStage"></select>
           
 
         </div>
 
-        <div class="col-2" style="display:flex;align-items:end;gap:10px;">
+        <div class="dqdc-col-2" style="display:flex;align-items:end;gap:10px;">
           <label style="margin:0;">
             <input id="stageUnknown" type="checkbox" />
             段階不明（1/3/6表示）
@@ -173,23 +173,23 @@
         </div>
       </div>
 
-      <div class="actions" style="margin-top:12px;">
+      <div class="dqdc-actions" style="margin-top:12px;">
         <button id="btnCalc">計算してログに追加</button>
         <button id="btnClear" type="button">ログ全消し</button>
         <button id="btnCsv" type="button">ログをCSVでDL</button>
       </div>
     </section>
 
-    <section class="card">
+    <section class="dqdc-card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">結果</h2>
 
-      <div id="resultMain" class="out">-</div>
-      <div class="muted" id="resultSub">-</div>
+      <div id="resultMain" class="dqdc-out">-</div>
+      <div class="dqdc-muted" id="resultSub">-</div>
 
       <div id="resultBands" style="margin-top:10px;"></div>
     </section>
 
-    <section class="card">
+    <section class="dqdc-card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">ログ一覧</h2>
       
 
@@ -200,14 +200,14 @@
               <th>#</th>
               <th>作品</th>
               <th>敵</th>
-              <th class="right">攻撃</th>
-              <th class="right">防御</th>
+              <th class="dqdc-right">攻撃</th>
+              <th class="dqdc-right">防御</th>
               <th>運基準</th>
               <th>モード</th>
               <th>技</th>
-              <th class="right">倍率</th>
-              <th class="right">平均</th>
-              <th class="right">最小〜最大</th>
+              <th class="dqdc-right">倍率</th>
+              <th class="dqdc-right">平均</th>
+              <th class="dqdc-right">最小〜最大</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -364,54 +364,76 @@
     return ms.map(Number).filter(n => Number.isFinite(n));
   }
 
-  function extractBossOrder(doc){
-    // ボス一覧：最初の「名前」っぽい列があるテーブルを優先、無ければリンク順
+  
+function extractEnemyListFromBossList(doc){
+    // ボス一覧はJSで生成されることが多いので、「a[href]が多いtable」を採用
     const tables = Array.from(doc.querySelectorAll("table"));
+    let best = null;
+    let bestCount = 0;
+
     for (const t of tables){
-      const h = headersOf(t);
-      if (!h.length) continue;
-      const idxName = h.findIndex(x => x.includes("ボス") || x.includes("敵") || x.includes("名前") || x.includes("名称"));
-      if (idxName < 0) continue;
-      const out = [];
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const name = (cells[idxName]?.textContent || "").trim();
-        if (!name) continue;
-        out.push({ name });
+      const rows = rowsOf(t);
+      let count = 0;
+      for (const tr of rows){
+        const a = tr.querySelector("a[href]");
+        if (!a) continue;
+        const name = (a.textContent || "").trim();
+        const href = (a.getAttribute("href") || "").trim();
+        if (!name || !href) continue;
+        count++;
       }
-      if (out.length) return out;
+      if (count > bestCount){
+        bestCount = count;
+        best = t;
+      }
     }
-    // fallback: link order
+
+    if (!best || bestCount === 0) return null;
+
     const out = [];
-    for (const a of Array.from(doc.querySelectorAll("a"))){
-      const name = (a.textContent||"").trim();
-      if (!name) continue;
-      out.push({ name });
+    for (const tr of rowsOf(best)){
+      const a = tr.querySelector("a[href]");
+      if (!a) continue;
+      const name = (a.textContent || "").trim();
+      const href = (a.getAttribute("href") || "").trim();
+      if (!name || !href) continue;
+      out.push({ name, href });
     }
     return out.length ? out : null;
   }
 
-  function extractBossDefenseMap(doc){
-    // DB側：防御がある表（名前＋防御）
-    const tables = Array.from(doc.querySelectorAll("table"));
-    for (const t of tables){
-      const h = headersOf(t);
-      if (!h.length) continue;
-      const idxName = h.findIndex(x => x.includes("ボス") || x.includes("敵") || x.includes("名前") || x.includes("名称"));
-      const idxDef = h.findIndex(x => x.includes("守備") || x.includes("防御"));
-      if (idxName < 0 || idxDef < 0) continue;
-
-      const map = {};
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const name = (cells[idxName]?.textContent || "").trim();
-        if (!name) continue;
-        const nums = parseNums(cells[idxDef]?.textContent || "");
-        if (!nums.length) continue;
-        map[name] = nums[0];
+  function extractDefenseFromEnemyPage(doc){
+    // 1) tableのth/td
+    for (const tr of Array.from(doc.querySelectorAll("tr"))){
+      const cells = Array.from(tr.children);
+      for (let i=0;i<cells.length-1;i++){
+        const label = (cells[i].textContent || "").trim();
+        if (!label) continue;
+        if (/(守備力|防御力|守備|防御|みのまもり)/.test(label)){
+          const nums = parseNums(cells[i+1].textContent || "");
+          if (nums.length) return nums[0];
+        }
       }
-      if (Object.keys(map).length) return map;
     }
+
+    // 2) dl/dt/dd
+    for (const dt of Array.from(doc.querySelectorAll("dt"))){
+      const label = (dt.textContent || "").trim();
+      if (!label) continue;
+      if (/(守備力|防御力|守備|防御|みのまもり)/.test(label)){
+        const dd = dt.nextElementSibling;
+        if (dd && dd.tagName === "DD"){
+          const nums = parseNums(dd.textContent || "");
+          if (nums.length) return nums[0];
+        }
+      }
+    }
+
+    // 3) 文字列パターン
+    const text = doc.body ? (doc.body.innerText || "") : "";
+    const m = text.match(/(?:守備力|防御力|守備|防御|みのまもり)\s*[:：]?\s*(\d+)/);
+    if (m) return Number(m[1]);
+
     return null;
   }
 
@@ -466,12 +488,18 @@
       const h = headersOf(t);
       if (!h.length) continue;
 
-      const idxLv = h.findIndex(x => x === "LV" || x.includes("LV") || x.includes("レベル"));
+      const idxLv = h.findIndex(x => {
+        const s = String(x || "").trim();
+        return /^(?:Lv|LV)$/i.test(s) || s.includes("レベル");
+      });
       if (idxLv < 0) continue;
 
-      const idxLuck = h.findIndex(x => x.includes("運の良さ") || (x.includes("運") && !x.includes("運下限") && !x.includes("運上限") && !x.includes("運基準")));
-      const idxLow = h.findIndex(x => x.includes("運下限"));
-      const idxHigh = h.findIndex(x => x.includes("運上限"));
+      const idxLuck = h.findIndex(x => {
+        const s = String(x || "").trim();
+        return /(運.?の.?良さ|運のよさ|うんのよさ)/.test(s);
+      });
+      const idxLow = h.findIndex(x => String(x || "").includes("運下限"));
+      const idxHigh = h.findIndex(x => String(x || "").includes("運上限"));
 
       for (const tr of rowsOf(t)){
         const cells = Array.from(tr.children);
@@ -494,34 +522,19 @@
       }
     }
 
-    if (low === null || high === null){
-      // まれに「運基準」表が別形式：列に「運基準」「運下限」「運上限」だけでLV無し
-      // この場合は拾えないので null のまま返す
-    }
-
     if (luck === null && low === null && high === null) return null;
     return { luck, low, high };
   }
 
+
   async function loadEnemies(game){
-    const defMap = await withIframe(SRC.db[game], (doc) => extractBossDefenseMap(doc)) || {};
-    const order = await withIframe(SRC.bossList[game], (doc) => extractBossOrder(doc)) || [];
-    const seen = new Set();
-    const out = [];
-    for (const it of order){
-      const name = String(it.name || "").trim();
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
-      const def = Number.isFinite(it.def) ? it.def : (Number.isFinite(defMap[name]) ? defMap[name] : null);
-      out.push({ name, def });
-    }
-    enemyMap[game] = out;
+    const list = await withIframe(SRC.bossList[game], (doc) => extractEnemyListFromBossList(doc)) || [];
+    enemyMap[game] = list.map(it => ({ name: it.name, href: it.href, def: null }));
   }
 
   async function loadSkills(game){
     const list = await withIframe(SRC.db[game], (doc) => extractSkillList(doc)) || [];
-    // 先頭に通常攻撃
-    skillMap[game] = [{ name:"通常攻撃", mult:1.0, multEff:null }, ...list];
+    skillMap[game] = list;
   }
 
   async function loadCharacterIndex(){
@@ -535,18 +548,41 @@
     const keep = keepEmpty ? 1 : 0;
     while (sel.options.length > keep) sel.remove(keep);
   }
+  function initDefStageOptions(){
+    const sel = $("defStage");
+    sel.innerHTML = "";
+    for (let s = -6; s <= 6; s++){
+      const op = document.createElement("option");
+      op.value = String(s);
+      if (s === 0) op.textContent = "なし（0）";
+      else if (s < 0) op.textContent = `防御↓${Math.abs(s)}`;
+      else op.textContent = `防御↑${s}`;
+      sel.appendChild(op);
+    }
+    sel.value = "0";
+  }
+
+
 
   function refreshEnemySelect(){
     const game = $("game").value;
     const sel = $("enemy");
+    const prev = sel.value;
     clearOptions(sel, true);
+
     (enemyMap[game] || []).forEach(it => {
       const op = document.createElement("option");
       op.value = it.name;
       op.textContent = it.name;
+      if (it.href) op.dataset.href = it.href;
       if (Number.isFinite(it.def)) op.dataset.def = String(it.def);
       sel.appendChild(op);
     });
+
+    // 可能なら選択維持
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    }
   }
 
   function refreshSkillSelect(){
@@ -571,20 +607,40 @@
   function updateSkillButtons(){
     const sel = $("skill");
     const op = sel.options[sel.selectedIndex];
-    const normal = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
-    const effRaw = op?.dataset?.multEff;
-    const eff = safeNumber(effRaw, null);
+
+    let normal = safeNumber(op?.dataset?.mult, 1.0);
+    let eff = safeNumber(op?.dataset?.multEff, null);
+
+    // DBに「特効」が無い場合の補完（よくある 1.1 / 1.6）
+    if (eff === null){
+      if (Math.abs(normal - 1.6) < 0.06){
+        eff = normal;
+        normal = 1.1;
+      } else if (Math.abs(normal - 1.1) < 0.06){
+        eff = 1.6;
+      }
+    }
+
     const btnN = $("setSkillNormal");
     const btnE = $("setSkillEffective");
+
     btnN.textContent = `通常(${fmt(normal,3)})`;
     if (eff !== null){
       btnE.disabled = false;
       btnE.textContent = `特効(${fmt(eff,3)})`;
-    }else{
+    } else {
       btnE.disabled = true;
-      btnE.textContent = `特効`;
+      btnE.textContent = "特効";
+    }
+
+    // 現在のモード（通常/特効）を反映
+    if (skillEffMode && eff !== null){
+      $("skillMult").value = String(eff);
+    } else {
+      $("skillMult").value = String(normal);
     }
   }
+
 
   // ====== 運基準：自動判定 & 数値表示 ======
   function decideLuckBand(game, luck, low, high){
@@ -747,40 +803,31 @@
   const logs = [];
 
   function renderLogs(){
-    const tbody = $("logTable").querySelector("tbody");
-    tbody.innerHTML = "";
-    for (const row of logs){
+    const tb = $("logTable").querySelector("tbody");
+    tb.innerHTML = "";
+    logs.forEach((row, i) => {
       const tr = document.createElement("tr");
+      const range = `${row.min}〜${row.max}`;
       const cells = [
-        row.game, row.enemy, row.A, row.D, row.band, row.mode, row.skill,
-        fmt(row.mult, 6), row.mean, row.min, row.max
+        String(i+1),
+        row.game,
+        row.enemy,
+        String(row.A),
+        String(row.D),
+        row.band,
+        row.mode,
+        row.skill,
+        fmt(row.mult, 3),
+        String(row.mean),
+        range,
       ];
       for (const c of cells){
         const td = document.createElement("td");
-        td.textContent = String(c);
+        td.textContent = c;
         tr.appendChild(td);
       }
-      tbody.appendChild(tr);
-    }
-  }
-
-  function addLog(){
-    const unknown = $("stageUnknown").checked;
-    const mode = $("mode").value;
-    if (!unknown){
-      const r = compute();
-      if (r.error) return;
-      logs.push(r);
-      renderLogs();
-      return;
-    }
-    const stages = [-1, -3, -6, 1, 3, 6];
-    for (const s of stages){
-      const r = compute(s);
-      if (r.error) continue;
-      logs.push(r);
-    }
-    renderLogs();
+      tb.appendChild(tr);
+    });
   }
 
   function downloadCsv(){
@@ -794,7 +841,7 @@
       if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
       return s;
     };
-    const csv = [headers, ...rows].map(r => r.map(esc).join(",")).join("\n");
+    const csv = [headers, ...dqdc-grids].map(r => r.map(esc).join(",")).join("\n");
     const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -831,10 +878,24 @@
     ids.forEach(id => {
       $(id).addEventListener("change", async () => {
         if (id === "enemy"){
+          const game = $("game").value;
           const sel = $("enemy");
           const op = sel.options[sel.selectedIndex];
-          const d = safeNumber(op?.dataset?.def, null);
-          if (d !== null) $("def").value = String(d);
+          const d0 = safeNumber(op?.dataset?.def, null);
+          if (d0 !== null){
+            $("def").value = String(d0);
+          } else {
+            const href = (op?.dataset?.href || "").trim();
+            if (href){
+              const d1 = await withIframe(href, (doc) => extractDefenseFromEnemyPage(doc));
+              if (d1 !== null){
+                op.dataset.def = String(d1);
+                $("def").value = String(d1);
+                const item = (enemyMap[game] || []).find(x => x.name === op.value);
+                if (item) item.def = d1;
+              }
+            }
+          }
         }
         if (id === "skill"){
           const sel = $("skill");
@@ -893,6 +954,7 @@
   }
 
   async function boot(){
+    initDefStageOptions();
     try{ await loadCharacterIndex(); }catch(e){}
     await bootGame($("game").value);
     await updateLuckAuto();
