@@ -76,6 +76,8 @@
               <th class="nowrap">守備力</th>
               <th class="nowrap">買値</th>
               <th class="nowrap">売値</th>
+              
+              <th class="nowrap">倍率</th>
               <th>効果</th>
               <th>入手方法</th>
               <th>装備可能</th>
@@ -227,7 +229,8 @@
           const def     = idx["守備力"] !== undefined ? (row[idx["守備力"]] || "") : "";
           const buyPrice  = idx["買値"]   !== undefined ? (row[idx["買値"]]   || "") : "";
           const sellPrice = idx["売値"]   !== undefined ? (row[idx["売値"]]   || "") : "";
-          const effect  = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
+          
+          const mult    = idx["倍率"] !== undefined ? (row[idx["倍率"]] || "") : "";const effect  = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
           const acquire = idx["入手方法"] !== undefined ? (row[idx["入手方法"]] || "") : "";
           const equip   = idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "";
           const note    = idx["備考"]     !== undefined ? (row[idx["備考"]]     || "") : "";
@@ -241,10 +244,10 @@
             }
           }
 
-          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note].join(" ");
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, mult, effect, acquire, equip, note].join(" ");
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, mult, effect, acquire, equip, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -294,6 +297,11 @@
           tdSell.className = "nowrap";
           tdSell.textContent = item.sellPrice;
           tr.appendChild(tdSell);
+
+          const tdMult = document.createElement("td");
+          tdMult.className = "nowrap";
+          tdMult.textContent = item.mult;
+          tr.appendChild(tdMult);
 
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(item.effect);
