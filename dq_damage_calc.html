@@ -33,9 +33,7 @@
 <body>
   <main class="wrap page-main">
     <h1>DQI・Ⅱダメージ計算</h1>
-    <p class="muted">平均ダメージ（切り捨て）＋ 最小〜最大（参考レンジ）を出します。係数などの設定は公開ページでは表示しません。</p>
-
-    <section class="card">
+<section class="card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">入力</h2>
 
       <div class="row">
@@ -53,7 +51,8 @@
             <option value="バッチリぼうけん">バッチリぼうけん</option>
             <option value="楽ちんプレイ">楽ちんプレイ</option>
           </select>
-          <div class="muted">※初期はバッチリ</div>
+          
+
         </div>
 
         <div class="col-3">
@@ -61,7 +60,8 @@
           <select id="enemy">
             <option value="">（未選択）</option>
           </select>
-          <div class="muted">選ぶと防御が自動入力</div>
+          
+
         </div>
 
         <div class="col-3">
@@ -79,7 +79,8 @@
             <option value="DQ2ムーンブルク王女">DQ2ムーンブルク王女</option>
             <option value="DQ2サマルトリア王女">DQ2サマルトリア王女</option>
           </select>
-          <div class="muted">運基準（最小/中/最大）を自動判定に使います</div>
+          
+
         </div>
 
         <div class="col-2">
@@ -100,7 +101,8 @@
             <option value="中">中</option>
             <option value="最大">最大</option>
           </select>
-          <div class="muted" id="luckBandHint">自動: -</div>
+          
+
         </div>
 
         <div class="col-3">
@@ -111,14 +113,15 @@
         <div class="col-3">
           <label>技（任意）</label>
           <select id="skill">
-            <option value="">通常攻撃（倍率1.0）</option>
+            <option value="" data-mult="1">通常攻撃（倍率1.0）</option>
           </select>
-          <div class="muted">選ぶと倍率が自動入力</div>
+          
+
         </div>
 
         <div class="col-2">
           <label>技倍率</label>
-          <input id="skillMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.6" />
+          <input id="skillMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.6" value="1" />
         </div>
 
         <div class="col-2">
@@ -130,25 +133,27 @@
         </div>
 
         <div class="col-4">
-          <label>ちからため / 超ちからため / おうえん（重複しない）</label>
+          <label>ちからため / 超ちからため / おうえん</label>
           <select id="tame">
             <option value="none">なし</option>
             <option value="tame">ちからため（2倍）</option>
             <option value="super_tame">超ちからため（3倍）</option>
             <option value="ouen">おうえん（2倍）</option>
           </select>
-          <div class="muted">※バイキルトとは併用可</div>
+          
+
         </div>
 
         <div class="col-2">
           <label>手動倍率（任意）</label>
-          <input id="manualMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.2" />
+          <input id="manualMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.2" value="1" />
         </div>
 
         <div class="col-4">
           <label>ルカニ/スカラ段階（-6〜+6）</label>
           <select id="defStage"></select>
-          <div class="muted">マイナス=防御ダウン（ダメ増） / プラス=防御アップ（ダメ減）</div>
+          
+
         </div>
 
         <div class="col-2" style="display:flex;align-items:end;gap:10px;">
@@ -177,7 +182,8 @@
 
     <section class="card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">ログ一覧</h2>
-      <div class="muted">「計算してログに追加」を押すたびに蓄積します（ページ再読み込みで消えます）。</div>
+      
+
       <div style="overflow:auto;margin-top:10px;">
         <table id="logTable">
           <thead>
@@ -199,14 +205,17 @@
         </table>
       </div>
     </section>
-
-    <p class="muted">管理用（係数・倍率編集）は別ページで行ってください。</p>
-  </main>
+</main>
 
 <script>
 (() => {
   function $(id){ return document.getElementById(id); }
-  function safeNumber(v, fallback=null){ const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+  function safeNumber(v, fallback=null){
+    if (v === null || v === undefined) return fallback;
+    if (typeof v === "string" && v.trim() === "") return fallback;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
   function roundDown(n){ return Math.floor(n); }
   function fmt(n, digits=3){ if (!Number.isFinite(n)) return "-"; return n.toFixed(digits).replace(/\.?0+$/, ""); }
 
@@ -436,7 +445,8 @@
       div.innerHTML = `<div class="card" style="margin:0;">
         <div class="pill">${it.label}</div>
         <div class="out" style="margin-top:8px;">${it.mean} <small>（${it.min}〜${it.max}）</small></div>
-        <div class="muted">段階: ${it.stageText}</div>
+        
+
       </div>`;
       row.appendChild(div);
     });
@@ -453,12 +463,16 @@
     return auto || "最大";
   }
 
-  function updateLuckHint(){
+  function updateLuckAutoLabel(){
     const chara = $("chara").value;
     const lv = safeNumber($("lv").value, null);
     const luck = safeNumber($("luck").value, null);
     const auto = autoLuckBand(chara, lv, luck);
-    $("luckBandHint").textContent = "自動: " + (auto || "-");
+    const sel = $("luckBand");
+    const opt = Array.from(sel.options).find(o => o.value === "auto");
+    if (opt){
+      opt.textContent = auto ? `自動（${auto}）` : "自動";
+    }
   }
 
   function computeOnce(forcedStage=null){
@@ -507,7 +521,7 @@
     if (!items.length){ setResultMain("-", "-", "-"); setResultSub("攻撃・防御を入力してください。"); setBandCards([]); return; }
     const pick = items.find(x => x.label.includes("↓3")) || items[0];
     setResultMain(pick.mean, pick.min, pick.max);
-    setResultSub("段階不明: 1/3/6を同時表示（下のカード参照）");
+    setResultSub("");
     setBandCards(items);
   }
 
@@ -655,25 +669,28 @@
           const op = sel.options[sel.selectedIndex];
           const m = safeNumber(op?.dataset?.mult, null);
           if (m != null) $("skillMult").value = String(m);
-          else if (!$("skill").value) $("skillMult").value = "";
+          else if (!$("skill").value) $("skillMult").value = "1";
         }
         if (id==="game"){ refreshEnemySelect(); refreshSkillSelect(); }
-        updateLuckHint();
+        updateLuckAutoLabel();
         applyResult();
       });
     });
-    ["lv","luck","chara"].forEach(id=> $(id).addEventListener("input", () => { updateLuckHint(); applyResult(); }));
+    ["lv","luck","chara"].forEach(id=> $(id).addEventListener("input", () => { updateLuckAutoLabel(); applyResult(); }));
   }
 
   async function boot(){
     initStageSelect();
     $("mode").value = "バッチリぼうけん";
+    // 初期値（空欄→0化防止）
+    $("skillMult").value = $("skillMult").value.trim() ? $("skillMult").value : "1";
+    $("manualMult").value = $("manualMult").value.trim() ? $("manualMult").value : "1";
     await loadConfig();
     await loadAbility();
     await Promise.all([ loadSkills("DQ1"), loadSkills("DQ2"), loadEnemies("DQ1"), loadEnemies("DQ2") ]);
     refreshEnemySelect();
     refreshSkillSelect();
-    updateLuckHint();
+    updateLuckAutoLabel();
     bind();
     applyResult();
   }
