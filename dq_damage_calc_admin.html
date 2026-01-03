@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DQI・Ⅱダメージ計算（管理）</title>
+  <link rel="stylesheet" href="theme.css" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .card { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 14px; margin: 12px 0; background: rgba(0,0,0,.12); }
+    label { display:block; font-size: 13px; opacity:.9; margin-bottom:6px; }
+    textarea, button, code { color: inherit; }
+    textarea { width: 100%; min-height: 360px; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.2); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace; }
+    button { padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.2); cursor: pointer; }
+    .actions { display:flex; gap: 8px; flex-wrap: wrap; margin-top:10px; }
+    .muted { opacity: .75; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="wrap page-main">
+    <h1>DQI・Ⅱダメージ計算（管理）</h1>
+    <p class="muted">ここは管理用です。係数・倍率の編集や、JSONの書き出しをします。公開ページ側には表示しません。</p>
+
+    <section class="card">
+      <label>設定JSON</label>
+      <div class="muted">同じフォルダに <code>dq_damage_calc_private.json</code> として置くと、公開ページが自動で読み込みます。</div>
+      <textarea id="jsonBox" spellcheck="false"></textarea>
+
+      <div class="actions">
+        <button id="btnLoad">既存JSONを読み込み</button>
+        <button id="btnValidate">JSONを検証</button>
+        <button id="btnDownload">JSONをダウンロード</button>
+        <button id="btnCopy">JSONをコピー</button>
+      </div>
+
+      <div class="muted" id="status" style="margin-top:10px;">-</div>
+    </section>
+
+    <section class="card">
+      <div class="muted">
+        <div>・運倍率はゲーム別（DQ1/DQ2）で <code>最小/中/最大</code> を入れ替えればOK。</div>
+        <div>・防御段階は <code>down</code> に 1/3/6 だけ入れてもOK（間は補間、upは未入力なら逆数で自動生成）。</div>
+        <div>・丸め（切り捨て）は公開ページ側で最後にだけ実施。</div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(() => {
+  const DEFAULT_URL = "dq_damage_calc_private.json";
+  const BUILTIN = {
+    "version": 1,
+    "base_state": { "luck_ref": "最大", "mode_ref": "バッチリぼうけん" },
+    "random_range": { "min": 0.90, "max": 1.10 },
+    "modes": { "バッチリぼうけん": 1.0, "楽ちんプレイ": 1.2 },
+    "luck_multipliers": {
+      "DQ1": { "最小": 0.660793, "中": 0.837856, "最大": 1.0 },
+      "DQ2": { "最小": 0.660793, "中": 0.837856, "最大": 1.0 }
+    },
+    "def_stage_multipliers": { "down": { "1": 1.270721206, "3": 1.433799785, "6": 1.804518211 }, "up": {} },
+    "buffs": {
+      "bikilt": { "label": "バイキルト", "mult": 2.0 },
+      "tame": { "label": "ちからため", "mult": 2.0 },
+      "ouen": { "label": "おうえん", "mult": 2.0 },
+      "super_tame": { "label": "超ちからため", "mult": 3.0 }
+    },
+    "games": {
+      "DQ1": { "formula_terms": [
+        { "name": "atk", "coef": 0.749991892417 },
+        { "name": "def", "coef": -0.264610864087 },
+        { "name": "atk2", "coef": -0.000498335818083 }
+      ]},
+      "DQ2": { "formula_terms": [
+        { "name": "atk", "coef": 0.971439985531 },
+        { "name": "def", "coef": -0.387533734158 },
+        { "name": "atk_def", "coef": -0.00113296225316 },
+        { "name": "def2", "coef": 0.000556551217359 }
+      ]}
+    }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (msg) => $("status").textContent = msg;
+
+  async function fetchText(url){
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("fetch失敗: " + url);
+    return await res.text();
+  }
+
+  function validateJson(txt){
+    const obj = JSON.parse(txt);
+    if (!obj || !obj.games || !obj.modes) throw new Error("必須キー（games/modes）がありません");
+    return obj;
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:"application/json;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function loadExisting(){
+    try{
+      const txt = await fetchText(DEFAULT_URL);
+      $("jsonBox").value = txt;
+      setStatus("読み込みOK: " + DEFAULT_URL);
+    }catch(e){
+      $("jsonBox").value = JSON.stringify(BUILTIN, null, 2);
+      setStatus("既存JSONが見つからないのでテンプレを表示しました（" + DEFAULT_URL + "）");
+    }
+  }
+
+  function copyJson(){
+    const txt = $("jsonBox").value || "";
+    navigator.clipboard.writeText(txt).then(() => setStatus("コピーしました"))
+      .catch(() => setStatus("コピーに失敗しました（ブラウザ権限）"));
+  }
+
+  function boot(){
+    $("btnLoad").addEventListener("click", loadExisting);
+    $("btnValidate").addEventListener("click", () => {
+      try{ validateJson($("jsonBox").value); setStatus("OK: JSONとして問題なし"); }
+      catch(e){ setStatus("NG: " + e.message); }
+    });
+    $("btnDownload").addEventListener("click", () => {
+      try{ validateJson($("jsonBox").value); downloadText("dq_damage_calc_private.json", $("jsonBox").value); setStatus("ダウンロードしました"); }
+      catch(e){ setStatus("NG: " + e.message); }
+    });
+    $("btnCopy").addEventListener("click", copyJson);
+    loadExisting();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
