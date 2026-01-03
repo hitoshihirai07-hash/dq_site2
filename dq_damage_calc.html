@@ -72,6 +72,11 @@
         </div>
 
         <div class="dqdc-col-3">
+          <label>敵のHP</label>
+          <input id="hp" type="number" inputmode="numeric" placeholder="例：1000" />
+        </div>
+
+        <div class="dqdc-col-3">
           <label>キャラ（任意）</label>
           <select id="chara">
             <option value="">（未選択）</option>
@@ -438,6 +443,48 @@ function extractEnemyListFromBossList(doc){
     return null;
   }
 
+  function extractHpFromEnemyPage(doc){
+    // 1) tableのth/td
+    for (const tr of Array.from(doc.querySelectorAll("tr"))){
+      const cells = Array.from(tr.children);
+      for (let i=0;i<cells.length-1;i++){
+        const label = (cells[i].textContent || "").trim();
+        if (!label) continue;
+        if (/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)/.test(label)){
+          const nums = parseNums(cells[i+1].textContent || "");
+          if (nums.length) return nums[0];
+        }
+      }
+    }
+
+    // 2) dl/dt/dd
+    for (const dt of Array.from(doc.querySelectorAll("dt"))){
+      const label = (dt.textContent || "").trim();
+      if (!label) continue;
+      if (/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)/.test(label)){
+        const dd = dt.nextElementSibling;
+        if (dd && dd.tagName === "DD"){
+          const nums = parseNums(dd.textContent || "");
+          if (nums.length) return nums[0];
+        }
+      }
+    }
+
+    // 3) 文字列パターン
+    const text = doc.body ? (doc.body.innerText || "") : "";
+    const m = text.match(/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)\s*[:：]?\s*(\d+)/);
+    if (m) return Number(m[1]);
+
+    return null;
+  }
+
+  function extractEnemyStatsFromEnemyPage(doc){
+    const def = extractDefenseFromEnemyPage(doc);
+    const hp = extractHpFromEnemyPage(doc);
+    if (def === null && hp === null) return null;
+    return { def, hp };
+  }
+
   function extractSkillList(doc){
     // 「倍率」列がある表
     const tables = Array.from(doc.querySelectorAll("table"));
@@ -529,8 +576,14 @@ function extractEnemyListFromBossList(doc){
 
 
   async function loadEnemies(game){
-    const list = await withIframe(SRC.bossList[game], (doc) => extractEnemyListFromBossList(doc)) || [];
-    enemyMap[game] = list.map(it => ({ name: it.name, href: it.href, def: null }));
+    let list = await withIframe(SRC.bossList[game], (doc) => extractEnemyListFromBossList(doc)) || [];
+
+    // DQ1/DQ2混入対策：hrefに dq1 / dq2 が含まれる場合はそれを優先
+    const key = (game === "DQ1") ? "dq1" : "dq2";
+    const filtered = list.filter(it => ((it.href || "").toLowerCase().includes(key)));
+    if (filtered.length) list = filtered;
+
+    enemyMap[game] = list.map(it => ({ name: it.name, href: it.href, def: null, hp: null }));
   }
 
   async function loadSkills(game){
@@ -577,6 +630,7 @@ function extractEnemyListFromBossList(doc){
       op.textContent = it.name;
       if (it.href) op.dataset.href = it.href;
       if (Number.isFinite(it.def)) op.dataset.def = String(it.def);
+      if (Number.isFinite(it.hp)) op.dataset.hp = String(it.hp);
       sel.appendChild(op);
     });
 
@@ -803,6 +857,28 @@ function extractEnemyListFromBossList(doc){
   // ====== ログ ======
   const logs = [];
 
+  function addLog(){
+    const unknown = $("stageUnknown").checked;
+    if (!unknown){
+      const r = compute();
+      if (r.error) return;
+      logs.push(r);
+      renderLogs();
+      return;
+    }
+
+    // 段階不明：↓1/3/6 と ↑1/3/6 をログにまとめて入れる
+    const stages = [-1, -3, -6, 1, 3, 6];
+    for (const s of stages){
+      const r = compute(s);
+      if (r.error) continue;
+      const tag = s < 0 ? `防御↓${Math.abs(s)}` : `防御↑${s}`;
+      r.skill = (r.skill ? r.skill + " / " : "") + tag;
+      logs.push(r);
+    }
+    renderLogs();
+  }
+
   function renderLogs(){
     const tb = $("logTable").querySelector("tbody");
     tb.innerHTML = "";
@@ -842,7 +918,7 @@ function extractEnemyListFromBossList(doc){
       if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
       return s;
     };
-    const csv = [headers, ...dqdc-grids].map(r => r.map(esc).join(",")).join("\n");
+    const csv = [headers, ...rows].map(r => r.map(esc).join(",")).join("\n");
     const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -886,18 +962,39 @@ function extractEnemyListFromBossList(doc){
           const game = $("game").value;
           const sel = $("enemy");
           const op = sel.options[sel.selectedIndex];
+
+          // 未選択ならリセット
+          if (!op || !op.value){
+            $("hp").value = "";
+            renderResult();
+            return;
+          }
+
           const d0 = safeNumber(op?.dataset?.def, null);
           if (d0 !== null){
             $("def").value = String(d0);
-          } else {
-            const href = (op?.dataset?.href || "").trim();
-            if (href){
-              const d1 = await withIframe(href, (doc) => extractDefenseFromEnemyPage(doc));
-              if (d1 !== null){
-                op.dataset.def = String(d1);
-                $("def").value = String(d1);
+          }
+          const h0 = safeNumber(op?.dataset?.hp, null);
+          if (h0 !== null){
+            $("hp").value = String(h0);
+          }
+
+          const href = (op?.dataset?.href || "").trim();
+          const needFetch = (d0 === null) || (h0 === null);
+          if (needFetch && href){
+            const stats = await withIframe(href, (doc) => extractEnemyStatsFromEnemyPage(doc));
+            if (stats){
+              if (stats.def !== null){
+                op.dataset.def = String(stats.def);
+                $("def").value = String(stats.def);
                 const item = (enemyMap[game] || []).find(x => x.name === op.value);
-                if (item) item.def = d1;
+                if (item) item.def = stats.def;
+              }
+              if (stats.hp !== null){
+                op.dataset.hp = String(stats.hp);
+                $("hp").value = String(stats.hp);
+                const item = (enemyMap[game] || []).find(x => x.name === op.value);
+                if (item) item.hp = stats.hp;
               }
             }
           }
