@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DQI・Ⅱダメージ計算 | ドラゴンクエストI・II HD-2D 非公式メモ</title>
+  <style>
+    :root{
+      --bg:#f7f5f2;
+      --panel:#ffffff;
+      --panel2:#fff7ef;
+      --text:#1f232b;
+      --muted:#6b7280;
+      --accent:#e96b00;
+      --accent2:#ff8f2b;
+      --bad:#c24141;
+      --ok:#0f9d58;
+      --border:rgba(0,0,0,0.10);
+      --shadow: 0 10px 28px rgba(0,0,0,0.10);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --fieldbg: rgba(255,255,255,0.85);
+      --fieldbg2: rgba(255,255,255,0.65);
+      --pillbg: rgba(0,0,0,0.04);
+      --softbg: rgba(0,0,0,0.03);
+      --softbg2: rgba(0,0,0,0.05);
+      --line: rgba(0,0,0,0.08);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0f1115;
+        --panel:#151923;
+        --panel2:#1b2230;
+        --text:#e7e9ee;
+        --muted:#aab0bd;
+        --accent:#ff9a3c;
+        --accent2:#ffbf66;
+        --bad:#ff6b6b;
+        --ok:#6bff95;
+        --border:rgba(255,255,255,0.09);
+        --shadow: 0 10px 30px rgba(0,0,0,0.35);
+        --fieldbg: rgba(0,0,0,0.25);
+        --fieldbg2: rgba(0,0,0,0.20);
+        --pillbg: rgba(255,255,255,0.06);
+        --softbg: rgba(255,255,255,0.03);
+        --softbg2: rgba(255,255,255,0.04);
+        --line: rgba(255,255,255,0.08);
+      }
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: radial-gradient(1000px 600px at 20% -10%, rgba(255,154,60,0.22), transparent 60%),
+                  radial-gradient(900px 600px at 90% 0%, rgba(255,191,102,0.12), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:var(--accent2); text-decoration:none}
+    a:hover{text-decoration:underline}
+    header{
+      max-width:1100px;
+      margin:28px auto 14px;
+      padding:0 18px;
+      display:flex;
+      gap:14px;
+      align-items:flex-end;
+      justify-content:space-between;
+    }
+    header h1{
+      font-size:22px;
+      margin:0;
+      letter-spacing:0.2px;
+    }
+    header .sub{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+    }
+    main{
+      max-width:1100px;
+      margin:0 auto 70px;
+      padding:0 18px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:18px;
+    }
+    @media (max-width: 980px){
+      main{grid-template-columns: 1fr}
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      padding:16px;
+    }
+    .card h2{
+      font-size:15px;
+      margin:0 0 12px;
+      color:var(--accent2);
+      letter-spacing:0.2px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    label{
+      font-size:12px;
+      color:var(--muted);
+      display:block;
+      margin-bottom:6px;
+    }
+    input, select, button, textarea{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--fieldbg);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(255,154,60,0.55);
+      box-shadow: 0 0 0 3px rgba(255,154,60,0.12);
+    }
+    button{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(255,154,60,0.28), rgba(255,154,60,0.14));
+      border-color: rgba(255,154,60,0.35);
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    button:hover{filter:brightness(1.06)}
+    button.secondary{
+      background: rgba(255,255,255,0.06);
+      border-color: var(--border);
+      font-weight:600;
+    }
+    button.danger{
+      background: rgba(255,107,107,0.14);
+      border-color: rgba(255,107,107,0.35);
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:var(--pillbg);
+      border:1px solid var(--border);
+      font-size:12px;
+      color:var(--muted);
+      margin-right:8px;
+    }
+    .pill b{color:var(--text)}
+    .out{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .metric{
+      flex:1 1 160px;
+      background:var(--fieldbg2);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+    .metric .k{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .metric .v{
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:0.2px;
+    }
+    .metric .v span{
+      font-size:13px;
+      color:var(--muted);
+      margin-left:6px;
+      font-weight:600;
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--border);
+      margin-top:12px;
+      background:var(--fieldbg2);
+    }
+    th, td{
+      font-size:12px;
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+      white-space:nowrap;
+    }
+    th{
+      text-align:left;
+      color:var(--muted);
+      background:var(--softbg2);
+    }
+    tr:last-child td{border-bottom:none}
+    td.mono{font-family:var(--mono)}
+    .split{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .split > *{flex:1}
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+    }
+    .toggle input{width:auto}
+    details{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      background:var(--softbg);
+    }
+    summary{
+      cursor:pointer;
+      color:var(--accent2);
+      font-weight:700;
+      font-size:12px;
+    }
+    textarea{
+      min-height:120px;
+      font-family:var(--mono);
+      font-size:12px;
+    }
+    .hr{
+      height:1px;
+      background:var(--line);
+      margin:12px 0;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>DQI・Ⅱダメージ計算</h1>
+    <div class="sub">HD-2D版 / 出力は「平均」と「最小〜最大（参考）」 / 丸めは最後にROUNDDOWN</div>
+  </div>
+  <div class="small">
+    <a href="/" class="pill">← トップへ</a>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="inputs">
+    <h2>入力</h2>
+
+    <div class="grid">
+      <div>
+        <label>作品</label>
+        <select id="game">
+          <option value="DQ1">DQ1</option>
+          <option value="DQ2" selected>DQ2</option>
+        </select>
+      </div>
+      <div>
+        <label>ゲームモード</label>
+        <select id="mode"></select>
+      </div>
+
+      <div>
+        <label>敵（任意）</label>
+        <select id="enemy">
+          <option value="">（未選択）</option>
+        </select>
+      </div>
+      <div>
+        <label>敵の防御（自動/手入力）</label>
+        <input id="def" type="number" inputmode="numeric" placeholder="例: 499" />
+      </div>
+
+      <div>
+        <label>攻撃</label>
+        <input id="atk" type="number" inputmode="numeric" placeholder="例: 384" />
+      </div>
+      <div>
+        <label>運の良さ（運基準）</label>
+        <select id="luck"></select>
+      </div>
+
+      <div>
+        <label>技（倍率）</label>
+        <select id="skill"></select>
+      </div>
+      <div>
+        <label>技倍率（表示）</label>
+        <input id="skillMult" type="text" readonly />
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <h2>バフ / デバフ</h2>
+
+    <div class="grid">
+      <div>
+        <label>バイキルト</label>
+        <select id="bikilt">
+          <option value="0" selected>なし</option>
+          <option value="1">あり（×2）</option>
+        </select>
+      </div>
+
+      <div>
+        <label>ちからため / おうえん / 超ちからため（重複しない）</label>
+        <select id="tame">
+          <option value="none" selected>なし</option>
+          <option value="ちからため">ちからため（×2）</option>
+          <option value="おうえん">おうえん（×2）</option>
+          <option value="超ちからため">超ちからため（×3）</option>
+        </select>
+      </div>
+
+      <div>
+        <label>ルカニ/ルカナン（防御変化）</label>
+        <select id="defStage"></select>
+      </div>
+
+      <div>
+        <label>段階不明（比較表示）</label>
+        <div class="toggle">
+          <input type="checkbox" id="unknownStages" checked />
+          <span>1段階 / 3段階 / 6段階（防御↓と防御↑）を同時表示</span>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>詳細設定（乱数幅・設定JSON）</summary>
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>最小倍率（参考）</label>
+          <input id="randMin" type="number" step="0.01" />
+        </div>
+        <div>
+          <label>最大倍率（参考）</label>
+          <input id="randMax" type="number" step="0.01" />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <button class="secondary" id="downloadConfig" type="button">設定JSONをダウンロード</button>
+        <button class="secondary" id="downloadData" type="button">敵/技データJSONをダウンロード</button>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>設定JSONを読み込み（dq_damage_calc_config.json など）</label>
+          <input type="file" id="loadConfig" accept=".json,application/json" />
+        </div>
+        <div>
+          <label>敵/技データJSONを読み込み（dq_damage_calc_data.json など）</label>
+          <input type="file" id="loadData" accept=".json,application/json" />
+        </div>
+      </div>
+
+      <div class="small" style="margin-top:10px;">
+        同じフォルダに <span class="mono">dq_damage_calc_config.json</span> / <span class="mono">dq_damage_calc_data.json</span> を置くと、ページ読み込み時に自動で反映します（無ければ内蔵の初期値を使います）。
+      </div>
+    </details>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <button id="calcBtn" type="button">計算してログに追加</button>
+      <button class="secondary" id="copyResult" type="button">結果をコピー</button>
+    </div>
+  </section>
+
+  <section class="card" id="outputs">
+    <h2>結果</h2>
+
+    <div class="out">
+      <div class="metric">
+        <div class="k">平均（ROUNDDOWN）</div>
+        <div class="v" id="outAvg">— <span>ダメージ</span></div>
+      </div>
+      <div class="metric">
+        <div class="k">最小〜最大（参考）</div>
+        <div class="v" id="outRange">—</div>
+      </div>
+      <div class="metric">
+        <div class="k">倍率内訳</div>
+        <div class="v" style="font-size:14px; font-weight:700; line-height:1.35" id="outMults">—</div>
+      </div>
+    </div>
+
+    <div id="stageCompareWrap"></div>
+
+    <details open>
+      <summary>ログ一覧</summary>
+      <div class="row" style="margin-top:10px;">
+        <button class="secondary" id="downloadLog" type="button">ログをCSVダウンロード</button>
+        <button class="danger" id="clearLog" type="button">ログクリア</button>
+      </div>
+      <table id="logTable">
+        <thead>
+          <tr>
+            <th>時刻</th>
+            <th>作品</th>
+            <th>敵</th>
+            <th>攻撃</th>
+            <th>防御</th>
+            <th>運</th>
+            <th>モード</th>
+            <th>技</th>
+            <th>バフ</th>
+            <th>防御段階</th>
+            <th>平均</th>
+            <th>最小</th>
+            <th>最大</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="small" style="margin-top:10px;">
+        ※ 段階不明の比較表示は、ログには「選択した段階」のみ記録します。
+      </div>
+    </details>
+
+    <details>
+      <summary>いま使ってる係数（参考表示）</summary>
+      <div class="small" id="coefView" style="margin-top:10px;"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="secondary" id="copySheetFormula" type="button">スプレッドシート式をコピー</button>
+        <button class="secondary" id="copyCoefs" type="button">係数（一覧）をコピー</button>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+/** ======================
+ *  内蔵デフォルト（外部JSONで上書き可）
+ *  ====================== */
+const DEFAULT_CONFIG = {"version": 1, "title": "DQI・Ⅱダメージ計算", "rounding": "floor", "randomRange": {"min": 0.9, "max": 1.1}, "modes": {"バッチリぼうけん": 1.0, "楽ちんプレイ": 1.2}, "luck": {"DQ1": {"最大": 1.0, "中": 0.855, "最小": 0.77}, "DQ2": {"最大": 1.0, "中": 0.837856, "最小": 0.660793}}, "baseFormula": {"DQ1": {"terms": [{"name": "A", "coef": 0.749991892417}, {"name": "D", "coef": -0.264610864087}, {"name": "A^2", "coef": -0.000498335818083}]}, "DQ2": {"terms": [{"name": "A", "coef": 0.971439985531}, {"name": "D", "coef": -0.387533734158}, {"name": "A*D", "coef": -0.00113296225316}, {"name": "D^2", "coef": 0.000556551217359}]}}, "buffs": {"バイキルト": {"mult": 2.0}, "ちからため": {"mult": 2.0, "exclusiveGroup": "tame"}, "おうえん": {"mult": 2.0, "exclusiveGroup": "tame"}, "超ちからため": {"mult": 3.0, "exclusiveGroup": "tame"}}, "skills": {"DQ1": {"なし": 1.0, "ドラゴン斬り": 1.6, "竜王斬り": 3.5}, "DQ2": {"なし": 1.0}}, "defenseStages": {"DQ1": {"down": {"0": 1.0, "1": 1.273126372, "2": 1.373471308, "3": null, "4": null, "5": null, "6": null}, "up": {"0": 1.0, "1": 0.7660260718, "2": null, "3": null, "4": null, "5": null, "6": null}}, "DQ2": {"down": {"0": 1.0, "1": 1.270721206, "2": null, "3": 1.433799785, "4": null, "5": null, "6": 1.804518211}, "up": {"0": 1.0, "1": null, "2": null, "3": null, "4": null, "5": null, "6": null}}}};
+const DEFAULT_DATA   = {"version": 1, "enemies": {"DQ1": [{"name": "りゅうおう", "defense": 323, "tags": ["ドラゴン"]}, {"name": "竜王", "defense": 355, "tags": ["ドラゴン"]}, {"name": "ゴーレム", "defense": 0, "tags": []}], "DQ2": [{"name": "ハーゴン", "defense": 499, "tags": ["ボス"]}, {"name": "シドー", "defense": 508, "tags": ["ボス"]}, {"name": "ワイルドホッグ", "defense": 255, "tags": ["モンスター"]}]}, "notes": "敵/技データは任意。ここを増やすとドロップダウンが便利になります。"};
+
+let cfg = structuredClone(DEFAULT_CONFIG);
+let db  = structuredClone(DEFAULT_DATA);
+
+const $ = (id) => document.getElementById(id);
+
+function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+function floor0(x){
+  if (!isFinite(x)) return 0;
+  return Math.floor(x + 1e-9); // 微小誤差対策
+}
+function fmt(n, digits=3){
+  if (!isFinite(n)) return "—";
+  return Number(n).toFixed(digits).replace(/\.?0+$/,'');
+}
+function nowStr(){
+  const d = new Date();
+  const pad = (x)=>String(x).padStart(2,"0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function termValue(term, A, D){
+  switch(term){
+    case "A": return A;
+    case "D": return D;
+    case "A*D": return A*D;
+    case "A^2": return A*A;
+    case "D^2": return D*D;
+    case "A^3": return A*A*A;
+    case "D^3": return D*D*D;
+    case "A^2*D": return (A*A)*D;
+    case "A*D^2": return A*(D*D);
+    default:
+      return 0;
+  }
+}
+
+function baseMean(game, A, D){
+  const f = cfg.baseFormula?.[game];
+  if (!f || !Array.isArray(f.terms)) return NaN;
+  let s = 0;
+  for (const t of f.terms){
+    s += (t.coef ?? 0) * termValue(t.name, A, D);
+  }
+  return s;
+}
+
+function interpolateStage(tbl, stage){
+  // tbl: {"0":1.0,"1":1.27,"2":null,...}
+  const s = String(stage);
+  if (tbl[s] != null) return {mult: tbl[s], approx:false};
+
+  // 近い既知点を探して線形補間
+  const pts = [];
+  for (const k of Object.keys(tbl)){
+    const v = tbl[k];
+    if (v != null && isFinite(v)) pts.push([Number(k), Number(v)]);
+  }
+  pts.sort((a,b)=>a[0]-b[0]);
+  if (pts.length === 0) return {mult:1.0, approx:true};
+
+  // 端の外側は端値で固定
+  if (stage <= pts[0][0]) return {mult: pts[0][1], approx:true};
+  if (stage >= pts[pts.length-1][0]) return {mult: pts[pts.length-1][1], approx:true};
+
+  // 範囲内補間
+  for (let i=0;i<pts.length-1;i++){
+    const [x1,y1] = pts[i];
+    const [x2,y2] = pts[i+1];
+    if (x1 <= stage && stage <= x2){
+      const r = (stage - x1) / (x2 - x1);
+      return {mult: y1 + (y2 - y1)*r, approx:true};
+    }
+  }
+  return {mult:1.0, approx:true};
+}
+
+function stageMultiplier(game, stage){
+  // stage: -6..+6, negative=防御ダウン, positive=防御アップ
+  const S = Math.abs(stage);
+  if (S === 0) return {mult:1.0, note:""};
+
+  const ds = cfg.defenseStages?.[game];
+  if (!ds) return {mult:1.0, note:""};
+
+  if (stage < 0){
+    const {mult, approx} = interpolateStage(ds.down, S);
+    return {mult, note: approx ? "（補間/推定）" : ""};
+  }else{
+    // up table first
+    const up = ds.up?.[String(S)];
+    if (up != null && isFinite(up)) return {mult: up, note:""};
+    // fallback: reciprocal of down (approx)
+    const downRes = interpolateStage(ds.down, S);
+    const m = downRes.mult ? (1.0 / downRes.mult) : 1.0;
+    return {mult: m, note: "（推定: 1/防御↓）"};
+  }
+}
+
+function getLuckMult(game, luck){
+  return cfg.luck?.[game]?.[luck] ?? 1.0;
+}
+function getModeMult(mode){
+  return cfg.modes?.[mode] ?? 1.0;
+}
+function getSkillMult(game, skill){
+  return cfg.skills?.[game]?.[skill] ?? 1.0;
+}
+
+function getBuffMult(){
+  let mult = 1.0;
+  if ($("bikilt").value === "1") mult *= (cfg.buffs?.["バイキルト"]?.mult ?? 2.0);
+
+  const tame = $("tame").value;
+  if (tame !== "none"){
+    mult *= (cfg.buffs?.[tame]?.mult ?? 1.0);
+  }
+  return mult;
+}
+
+function computeOne(params){
+  const {game, enemyName, A, D, luck, mode, skill, stage} = params;
+  const base = baseMean(game, A, D);
+  const luckM = getLuckMult(game, luck);
+  const modeM = getModeMult(mode);
+  const skillM = getSkillMult(game, skill);
+  const buffM = getBuffMult();
+  const st = stageMultiplier(game, stage);
+
+  let mean = base * luckM * modeM * skillM * buffM * st.mult;
+  mean = Math.max(0, mean);
+
+  const rmin = Number($("randMin").value);
+  const rmax = Number($("randMax").value);
+
+  const avgOut = floor0(mean);
+  const minOut = floor0(mean * rmin);
+  const maxOut = floor0(mean * rmax);
+
+  const breakdown = {
+    base, luckM, modeM, skillM, buffM, stageM: st.mult, stageNote: st.note
+  };
+
+  return {avgOut, minOut, maxOut, breakdown};
+}
+
+/** ========= UI: init ========= */
+function populateMode(){
+  const sel = $("mode");
+  sel.innerHTML = "";
+  for (const k of Object.keys(cfg.modes)){
+    const opt = document.createElement("option");
+    opt.value = k;
+    opt.textContent = k;
+    sel.appendChild(opt);
+  }
+  sel.value = "バッチリぼうけん";
+}
+function populateLuck(){
+  const game = $("game").value;
+  const sel = $("luck");
+  sel.innerHTML = "";
+  const obj = cfg.luck?.[game] ?? {"最大":1};
+  for (const k of Object.keys(obj)){
+    const opt = document.createElement("option");
+    opt.value = k;
+    opt.textContent = k;
+    sel.appendChild(opt);
+  }
+  sel.value = obj["最大"] != null ? "最大" : Object.keys(obj)[0];
+}
+function populateEnemies(){
+  const game = $("game").value;
+  const sel = $("enemy");
+  const current = sel.value;
+  sel.innerHTML = `<option value="">（未選択）</option>`;
+  const list = db.enemies?.[game] ?? [];
+  for (const e of list){
+    const opt = document.createElement("option");
+    opt.value = e.name;
+    opt.textContent = e.name;
+    opt.dataset.defense = e.defense;
+    opt.dataset.tags = (e.tags||[]).join(",");
+    sel.appendChild(opt);
+  }
+  sel.value = current && Array.from(sel.options).some(o=>o.value===current) ? current : "";
+}
+function populateSkills(){
+  const game = $("game").value;
+  const sel = $("skill");
+  sel.innerHTML = "";
+  const skills = cfg.skills?.[game] ?? {"なし":1.0};
+  for (const [name, mult] of Object.entries(skills)){
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    opt.dataset.mult = mult;
+    sel.appendChild(opt);
+  }
+  if (skills["なし"] != null) sel.value = "なし";
+  updateSkillMult();
+}
+function populateDefStages(){
+  const sel = $("defStage");
+  sel.innerHTML = "";
+  const opts = [];
+  opts.push({v:0, t:"0（変化なし）"});
+  for (let i=1;i<=6;i++){
+    opts.push({v:-i, t:`防御↓ ${i} 段階`});
+  }
+  for (let i=1;i<=6;i++){
+    opts.push({v:+i, t:`防御↑ ${i} 段階`});
+  }
+  for (const o of opts){
+    const opt = document.createElement("option");
+    opt.value = String(o.v);
+    opt.textContent = o.t;
+    sel.appendChild(opt);
+  }
+  sel.value = "0";
+}
+
+function updateEnemyDefense(){
+  const sel = $("enemy");
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.dataset || !opt.dataset.defense) return;
+  const def = Number(opt.dataset.defense);
+  if (def) $("def").value = def;
+}
+
+function updateSkillMult(){
+  const game = $("game").value;
+  const skill = $("skill").value;
+  const mult = getSkillMult(game, skill);
+  $("skillMult").value = "× " + fmt(mult, 6);
+}
+
+function updateCoefView(){
+  const game = $("game").value;
+  const terms = cfg.baseFormula?.[game]?.terms ?? [];
+  const lines = [];
+  lines.push(`<div class="pill"><b>${game}</b> の基礎式（平均）</div>`);
+  const parts = [];
+  for (const t of terms){
+    parts.push(`${t.coef} * ${t.name}`);
+  }
+  lines.push(`<div class="small mono" style="margin-top:8px;">${parts.join("  +  ").replaceAll("+ -","- ")}</div>`);
+  lines.push(`<div class="small" style="margin-top:10px;">※ この値に「運倍率・モード倍率・バフ・技倍率・防御段階倍率」を掛け、最後に切り捨てます。</div>`);
+  $("coefView").innerHTML = lines.join("");
+}
+
+function sheetFormula(game){
+  const terms = cfg.baseFormula?.[game]?.terms ?? [];
+  // A2=攻撃, B2=防御
+  let s = "=";
+  terms.forEach((t, i)=>{
+    const coef = Number(t.coef);
+    const abs = Math.abs(coef);
+    const ref = ({
+      "A":"A2",
+      "D":"B2",
+      "A*D":"(A2*B2)",
+      "A^2":"(A2^2)",
+      "D^2":"(B2^2)",
+      "A^3":"(A2^3)",
+      "D^3":"(B2^3)",
+      "A^2*D":"((A2^2)*B2)",
+      "A*D^2":"(A2*(B2^2))",
+    })[t.name] || t.name;
+    const term = `${abs}*${ref}`;
+    if (i === 0){
+      s += (coef < 0 ? "-" : "") + term;
+    }else{
+      s += (coef < 0 ? " - " : " + ") + term;
+    }
+  });
+  return s;
+}
+
+function copyText(txt){
+  return navigator.clipboard.writeText(txt);
+}
+
+function renderStageCompare(game, baseParams){
+  const wrap = $("stageCompareWrap");
+  if (!$("unknownStages").checked){
+    wrap.innerHTML = "";
+    return;
+  }
+
+  const rows = [];
+  const picks = [
+    {label:"防御↓ 1段階", stage:-1},
+    {label:"防御↓ 3段階", stage:-3},
+    {label:"防御↓ 6段階", stage:-6},
+    {label:"防御↑ 1段階", stage:+1},
+    {label:"防御↑ 3段階", stage:+3},
+    {label:"防御↑ 6段階", stage:+6},
+  ];
+
+  for (const p of picks){
+    const res = computeOne({...baseParams, stage:p.stage});
+    rows.push({
+      label:p.label,
+      avg: res.avgOut,
+      min: res.minOut,
+      max: res.maxOut,
+      note: res.breakdown.stageNote || ""
+    });
+  }
+
+  let html = `<table>
+    <thead><tr><th>比較</th><th>平均</th><th>最小</th><th>最大</th><th>備考</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+        <td>${r.label}</td>
+        <td class="mono">${r.avg}</td>
+        <td class="mono">${r.min}</td>
+        <td class="mono">${r.max}</td>
+        <td class="small">${r.note}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div class="small" style="margin-top:8px;">※ 防御↑はテーブルが未設定の場合、暫定で「1/防御↓」で推定します（設定JSONで上書きできます）。</div>
+  `;
+  wrap.innerHTML = html;
+}
+
+function calcAndShow(addToLog=true){
+  const game = $("game").value;
+  const enemyName = $("enemy").value || "（未選択）";
+  const A = Number($("atk").value);
+  const D = Number($("def").value);
+  const luck = $("luck").value;
+  const mode = $("mode").value;
+  const skill = $("skill").value;
+  const stage = Number($("defStage").value);
+
+  if (!isFinite(A) || !isFinite(D)){
+    alert("攻撃と防御を入力してください。");
+    return null;
+  }
+
+  const params = {game, enemyName, A, D, luck, mode, skill, stage};
+  const res = computeOne(params);
+
+  $("outAvg").textContent = res.avgOut + "";
+  $("outRange").textContent = `${res.minOut} ～ ${res.maxOut}`;
+  const b = res.breakdown;
+  const multTxt = [
+    `運×${fmt(b.luckM,6)}`,
+    `モード×${fmt(b.modeM,6)}`,
+    `技×${fmt(b.skillM,6)}`,
+    `バフ×${fmt(b.buffM,6)}`,
+    `防御段階×${fmt(b.stageM,6)}${b.stageNote||""}`,
+  ].join("<br>");
+  $("outMults").innerHTML = multTxt;
+
+  renderStageCompare(game, params);
+
+  if (addToLog){
+    appendLog(params, res);
+  }
+
+  updateCoefView();
+  return {params, res};
+}
+
+function appendLog(params, res){
+  const tbody = $("logTable").querySelector("tbody");
+  const tr = document.createElement("tr");
+
+  const buffs = [];
+  if ($("bikilt").value === "1") buffs.push("バイキルト");
+  const tame = $("tame").value;
+  if (tame !== "none") buffs.push(tame);
+
+  const cells = [
+    nowStr(),
+    params.game,
+    params.enemyName,
+    params.A,
+    params.D,
+    params.luck,
+    params.mode,
+    params.skill,
+    buffs.join("+") || "なし",
+    params.stage,
+    res.avgOut,
+    res.minOut,
+    res.maxOut,
+  ];
+
+  cells.forEach((c, idx)=>{
+    const td = document.createElement("td");
+    td.textContent = c;
+    if ([3,4,9,10,11,12].includes(idx)) td.classList.add("mono");
+    tr.appendChild(td);
+  });
+  tbody.prepend(tr);
+}
+
+function downloadCSV(filename, rows){
+  const esc = (s)=> String(s).replaceAll('"','""');
+  const csv = rows.map(r=>r.map(c=>`"${esc(c)}"`).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+function downloadJSON(filename, obj){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+function logToRows(){
+  const rows = [];
+  rows.push(["時刻","作品","敵","攻撃","防御","運","モード","技","バフ","防御段階","平均","最小","最大"]);
+  const trs = Array.from($("logTable").querySelector("tbody").querySelectorAll("tr"));
+  for (const tr of trs){
+    rows.push(Array.from(tr.querySelectorAll("td")).map(td=>td.textContent));
+  }
+  return rows;
+}
+
+/** ===== load external JSON if present ===== */
+async function tryFetchJSON(path){
+  try{
+    const res = await fetch(path, {cache:"no-store"});
+    if (!res.ok) return null;
+    return await res.json();
+  }catch(e){
+    return null;
+  }
+}
+async function init(){
+  // default random range
+  $("randMin").value = cfg.randomRange?.min ?? 0.90;
+  $("randMax").value = cfg.randomRange?.max ?? 1.10;
+
+  // auto load local files (optional)
+  const localCfg = await tryFetchJSON("dq_damage_calc_config.json");
+  if (localCfg) cfg = localCfg;
+  const localDb = await tryFetchJSON("dq_damage_calc_data.json");
+  if (localDb) db = localDb;
+
+  populateMode();
+  populateDefStages();
+  populateLuck();
+  populateEnemies();
+  populateSkills();
+  updateCoefView();
+}
+init();
+
+/** ===== events ===== */
+$("game").addEventListener("change", ()=>{
+  populateLuck();
+  populateEnemies();
+  populateSkills();
+  updateCoefView();
+  // reset skill mult display
+  updateSkillMult();
+});
+
+$("enemy").addEventListener("change", ()=>{
+  updateEnemyDefense();
+});
+
+$("skill").addEventListener("change", ()=>{
+  updateSkillMult();
+});
+
+$("calcBtn").addEventListener("click", ()=>{
+  calcAndShow(true);
+});
+
+$("copyResult").addEventListener("click", async ()=>{
+  const r = calcAndShow(false);
+  if (!r) return;
+  const {params, res} = r;
+  const txt = [
+    `作品: ${params.game}`,
+    `敵: ${params.enemyName}`,
+    `攻撃: ${params.A} / 防御: ${params.D}`,
+    `運: ${params.luck} / モード: ${params.mode}`,
+    `技: ${params.skill}`,
+    `防御段階: ${params.stage}`,
+    `平均: ${res.avgOut}`,
+    `最小〜最大(参考): ${res.minOut}〜${res.maxOut}`,
+  ].join("\n");
+  try{
+    await copyText(txt);
+    alert("コピーしました。");
+  }catch(e){
+    alert("コピーに失敗しました（ブラウザの権限設定を確認してください）。");
+  }
+});
+
+$("downloadLog").addEventListener("click", ()=>{
+  downloadCSV("dq_damage_calc_log.csv", logToRows());
+});
+
+$("clearLog").addEventListener("click", ()=>{
+  $("logTable").querySelector("tbody").innerHTML = "";
+});
+
+$("downloadConfig").addEventListener("click", ()=>{
+  downloadJSON("dq_damage_calc_config.json", cfg);
+});
+
+$("downloadData").addEventListener("click", ()=>{
+  downloadJSON("dq_damage_calc_data.json", db);
+});
+
+$("copySheetFormula").addEventListener("click", async ()=>{
+  const game = $("game").value;
+  const f = sheetFormula(game);
+  try{
+    await copyText(f);
+    alert("スプレッドシート式をコピーしました。");
+  }catch(e){
+    alert("コピーできませんでした。");
+  }
+});
+
+$("copyCoefs").addEventListener("click", async ()=>{
+  const game = $("game").value;
+  const terms = cfg.baseFormula?.[game]?.terms ?? [];
+  const lines = terms.map(t=>`${t.name}\t${t.coef}`);
+  try{
+    await copyText(lines.join("\n"));
+    alert("係数をコピーしました。");
+  }catch(e){
+    alert("コピーできませんでした。");
+  }
+});
+
+$("loadConfig").addEventListener("change", async (ev)=>{
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const txt = await file.text();
+  try{
+    cfg = JSON.parse(txt);
+    populateMode();
+    populateDefStages();
+    populateLuck();
+    populateSkills();
+    updateCoefView();
+    $("randMin").value = cfg.randomRange?.min ?? $("randMin").value;
+    $("randMax").value = cfg.randomRange?.max ?? $("randMax").value;
+    alert("設定JSONを読み込みました。");
+  }catch(e){
+    alert("設定JSONの読み込みに失敗しました。");
+  }
+  ev.target.value = "";
+});
+
+$("loadData").addEventListener("change", async (ev)=>{
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const txt = await file.text();
+  try{
+    db = JSON.parse(txt);
+    populateEnemies();
+    alert("敵/技データJSONを読み込みました。");
+  }catch(e){
+    alert("敵/技データJSONの読み込みに失敗しました。");
+  }
+  ev.target.value = "";
+});
+</script>
+
+</body>
+</html>
