@@ -103,6 +103,7 @@
             <option value="中">中</option>
             <option value="最大">最大</option>
           </select>
+          <div id="luckBaseInfo" style="font-size:12px;opacity:.85;margin-top:6px;line-height:1.3;"></div>
           
 
         </div>
@@ -217,60 +218,104 @@
 
 <script>
 (() => {
-  function $(id){ return document.getElementById(id); }
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  // ====== 固定データ（公開ページでは表示しない） ======
+  const COEF = {
+    DQ1: { a: 0.749991892417, b: 0.264610864087, c: 0.000498335818083 }, // a*A - b*D - c*A^2
+    DQ2: { a: 0.971654263608598, b: 0.387760162755906, c: 0.00113383813266851, d: 0.000557355812240368 }, // a*A - b*D - c*A*D + d*D^2
+  };
+
+  const LUCK_MULT = {
+    DQ1: { "最小": 0.753404, "中": 0.856676, "最大": 1.0 },
+    DQ2: { "最小": 0.660913083635202, "中": 0.83753922756278, "最大": 1.0 },
+  };
+
+  const MODE_MULT = {
+    "バッチリぼうけん": 1.0,
+    "楽ちんプレイ": 1.2,
+  };
+
+  // 乱数レンジ（参考表示用）
+  const RAND_MIN = 0.90;
+  const RAND_MAX = 1.10;
+
+  // 防御段階倍率（防御ダウンは +倍率 / 防御アップは 1/倍率）
+  // 既知点：1,3,6（あなたのログ基準）。間は線形補間。
+  const DEF_DOWN_POINTS = [
+    { s: 0, m: 1.0 },
+    { s: 1, m: 1.270721206 },     // ワイルドホッグ
+    { s: 3, m: 1.433799785 },     // ワイルドホッグ
+    { s: 6, m: 1.804518211 },     // シドー
+  ];
+
+  function clampInt(n, lo, hi){
+    n = Math.trunc(n);
+    return Math.max(lo, Math.min(hi, n));
+  }
+
   function safeNumber(v, fallback=null){
     if (v === null || v === undefined) return fallback;
-    if (typeof v === "string" && v.trim() === "") return fallback;
+    if (typeof v === "string" && v.trim() === "") return fallback; // 空欄は0扱いにしない
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;
   }
-  function roundDown(n){ return Math.floor(n); }
-  function fmt(n, digits=3){ if (!Number.isFinite(n)) return "-"; return n.toFixed(digits).replace(/\.?0+$/, ""); }
 
-  function parseCSV(text) {
-    if (!text) return [];
-    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-    const rows = [];
-    let row = [], field = "", inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (inQuotes) {
-        if (c === '"') {
-          if (text[i+1] === '"') { field += '"'; i++; }
-          else { inQuotes = false; }
-        } else field += c;
-      } else {
-        if (c === '"') inQuotes = true;
-        else if (c === ",") { row.push(field); field = ""; }
-        else if (c === "\n" || c === "\r") {
-          if (c === "\r" && text[i+1] === "\n") i++;
-          row.push(field);
-          if (row.length > 1 || row[0] !== "") rows.push(row);
-          row = []; field = "";
-        } else field += c;
-      }
-    }
-    row.push(field);
-    if (row.length > 1 || row[0] !== "") rows.push(row);
-    if (!rows.length) return [];
-    const headers = rows[0].map(h => (h || "").trim());
-    const out = [];
-    for (let r = 1; r < rows.length; r++) {
-      const obj = {};
-      for (let c = 0; c < headers.length; c++) obj[headers[c]] = (rows[r][c] ?? "").trim();
-      out.push(obj);
-    }
-    return out;
+  function floor0(x){
+    return Math.floor(x);
   }
 
-  async function fetchText(url){
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error("fetch失敗: " + url);
-    return await res.text();
+  function fmt(x, d=3){
+    if (!Number.isFinite(x)) return "";
+    return Number(x).toFixed(d).replace(/\.?0+$/,"");
   }
 
-  // 同一オリジンの公開HTML（CSV読込＋描画後のテーブル）を確実に拾うためのヘルパー
-  async function withIframe(url, tryExtract, timeoutMs=12000, intervalMs=150){
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function stageMult(stage){
+    stage = clampInt(stage, -6, 6);
+    if (stage === 0) return 1.0;
+
+    const down = Math.abs(stage);
+    // find segment
+    let left = DEF_DOWN_POINTS[0], right = DEF_DOWN_POINTS[DEF_DOWN_POINTS.length-1];
+    for (let i=0;i<DEF_DOWN_POINTS.length-1;i++){
+      const p = DEF_DOWN_POINTS[i], q = DEF_DOWN_POINTS[i+1];
+      if (down >= p.s && down <= q.s){ left = p; right = q; break; }
+    }
+    let m;
+    if (right.s === left.s) m = left.m;
+    else m = lerp(left.m, right.m, (down - left.s) / (right.s - left.s));
+
+    // stage < 0 => 防御ダウン（ダメ増）
+    // stage > 0 => 防御アップ（ダメ減）= 逆数
+    return stage < 0 ? m : (1.0 / m);
+  }
+
+  function baseDamage(game, A, D){
+    if (game === "DQ1"){
+      const {a,b,c} = COEF.DQ1;
+      return a*A - b*D - c*(A*A);
+    }
+    const {a,b,c,d} = COEF.DQ2;
+    return a*A - b*D - c*(A*D) + d*(D*D);
+  }
+
+  // ====== 外部データ（同一サイト内ページから読み取り） ======
+  const SRC = {
+    bossList: { DQ1: "dq1_boss_list.html", DQ2: "dq2_boss_list.html" },
+    db: { DQ1: "dq1_db.html", DQ2: "dq2_db.html" },
+    characterIndex: "dq_character.html",
+  };
+
+  let enemyMap = { DQ1: [], DQ2: [] }; // {name, def}
+  let skillMap = { DQ1: [], DQ2: [] }; // {name, mult, multEff}
+  let charPages = new Map(); // name -> href
+  let lastLuckInfo = null; // {low, high, luck, band}
+
+  function withIframe(url, tryExtract, timeoutMs=12000, intervalMs=120){
     return new Promise((resolve) => {
       const iframe = document.createElement("iframe");
       iframe.style.display = "none";
@@ -279,13 +324,16 @@
 
       const start = Date.now();
       let done = false;
-      const cleanup = () => { try{ iframe.remove(); }catch(e){} };
+
+      const cleanup = () => { try { iframe.remove(); } catch(e){} };
 
       const tick = () => {
         if (done) return;
-        const doc = iframe.contentDocument;
+        let doc = null;
+        try { doc = iframe.contentDocument; } catch(e){ doc = null; }
         let val = null;
-        try{ val = doc ? tryExtract(doc) : null; }catch(e){ val = null; }
+        try { val = doc ? tryExtract(doc) : null; } catch(e){ val = null; }
+
         if (val){
           done = true; cleanup(); resolve(val); return;
         }
@@ -300,494 +348,203 @@
     });
   }
 
+  function rowsOf(t){
+    const tbody = t.querySelector("tbody");
+    if (tbody) return Array.from(tbody.querySelectorAll("tr"));
+    return Array.from(t.querySelectorAll("tr")).slice(1);
+  }
+  function headersOf(t){
+    const tr = t.querySelector("thead tr") || t.querySelector("tr");
+    if (!tr) return [];
+    return Array.from(tr.children).map(c => (c.textContent||"").trim());
+  }
   function parseNums(text){
-    const s = String(text ?? "").replace(/,/g," ");
-    const m = s.match(/\d+(?:\.\d+)?/g);
-    return m ? m.map(Number).filter(n=>Number.isFinite(n)) : [];
+    const s = String(text||"").replace(/,/g," ");
+    const ms = s.match(/-?\d+(?:\.\d+)?/g) || [];
+    return ms.map(Number).filter(n => Number.isFinite(n));
   }
 
-  function getHeaders(table){
-    const headRow = table.querySelector("thead tr") || table.querySelector("tr");
-    if (!headRow) return [];
-    return Array.from(headRow.children).map(c => (c.textContent || "").trim());
-  }
-
-  function rowsOf(table){
-    const body = table.querySelector("tbody");
-    const trs = body ? Array.from(body.querySelectorAll("tr")) : Array.from(table.querySelectorAll("tr")).slice(1);
-    return trs;
-  }
-
-  function findTable(doc, needHeaders){
+  function extractBossOrder(doc){
+    // ボス一覧：最初の「名前」っぽい列があるテーブルを優先、無ければリンク順
     const tables = Array.from(doc.querySelectorAll("table"));
     for (const t of tables){
-      const headers = getHeaders(t);
-      if (!headers.length) continue;
-      const ok = needHeaders.every(h => headers.some(x => x.includes(h)));
-      if (ok) return t;
-    }
-    return null;
-  }
-
-  function extractSkillList(doc){
-    // 「倍率」列がある表を対象にする（名前列は「名前/名称/技」など）
-    const tables = Array.from(doc.querySelectorAll("table"));
-    const out = [];
-    for (const t of tables){
-      const headers = getHeaders(t);
-      if (!headers.length) continue;
-      const idxMult = headers.findIndex(h => h.includes("倍率"));
-      const idxName = headers.findIndex(h => h.includes("名前") || h.includes("名称") || h.includes("技"));
-      if (idxMult < 0 || idxName < 0) continue;
-
-      const idxType = headers.findIndex(h => h.includes("種別") || h.includes("分類") || h.includes("タイプ"));
+      const h = headersOf(t);
+      if (!h.length) continue;
+      const idxName = h.findIndex(x => x.includes("ボス") || x.includes("敵") || x.includes("名前") || x.includes("名称"));
+      if (idxName < 0) continue;
+      const out = [];
       for (const tr of rowsOf(t)){
         const cells = Array.from(tr.children);
         const name = (cells[idxName]?.textContent || "").trim();
         if (!name) continue;
-        const nums = parseNums(cells[idxMult]?.textContent || "");
-        if (!nums.length) continue;
-
-        const type = idxType >= 0 ? (cells[idxType]?.textContent || "").trim() : "";
-        const normal = nums[0];
-        const eff = nums.length >= 2 ? nums[1] : null;
-        out.push({ name, type, mult: normal, multEff: eff });
+        out.push({ name });
       }
-      if (out.length) break; // 最初に見つかった有効テーブルを優先
+      if (out.length) return out;
+    }
+    // fallback: link order
+    const out = [];
+    for (const a of Array.from(doc.querySelectorAll("a"))){
+      const name = (a.textContent||"").trim();
+      if (!name) continue;
+      out.push({ name });
     }
     return out.length ? out : null;
   }
 
-  function extractBossOrder(doc){
-    // ボス一覧は「名前」列がある表を優先。無ければリンク順。
-    const tables = Array.from(doc.querySelectorAll("table"));
-    for (const t of tables){
-      const headers = getHeaders(t);
-      if (!headers.length) continue;
-      const idxName = headers.findIndex(h => h.includes("ボス") || h.includes("敵") || h.includes("名前") || h.includes("名称"));
-      if (idxName < 0) continue;
-
-      const idxDef = headers.findIndex(h => h.includes("守備") || h.includes("防御"));
-      const list = [];
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const name = (cells[idxName]?.textContent || "").trim();
-        if (!name) continue;
-        const defNums = idxDef >= 0 ? parseNums(cells[idxDef]?.textContent || "") : [];
-        const def = defNums.length ? defNums[0] : null;
-        list.push({ name, def });
-      }
-      if (list.length) return list;
-    }
-    // fallback: リンク順（ボスっぽいリンクだけ）
-    const list = [];
-    for (const a of Array.from(doc.querySelectorAll("a"))){
-      const href = (a.getAttribute("href") || "").trim();
-      if (!href) continue;
-      if (!/boss/i.test(href) || !href.endsWith(".html")) continue;
-      const name = (a.textContent || "").trim();
-      if (!name) continue;
-      list.push({ name, def: null });
-    }
-    return list.length ? list : null;
-  }
-
   function extractBossDefenseMap(doc){
-    // DB側にボス防御が載ってる表があれば拾う
+    // DB側：防御がある表（名前＋防御）
     const tables = Array.from(doc.querySelectorAll("table"));
-    const map = {};
     for (const t of tables){
-      const headers = getHeaders(t);
-      if (!headers.length) continue;
-      const idxName = headers.findIndex(h => h.includes("ボス") || h.includes("敵") || h.includes("名前") || h.includes("名称"));
-      const idxDef = headers.findIndex(h => h.includes("守備") || h.includes("防御"));
+      const h = headersOf(t);
+      if (!h.length) continue;
+      const idxName = h.findIndex(x => x.includes("ボス") || x.includes("敵") || x.includes("名前") || x.includes("名称"));
+      const idxDef = h.findIndex(x => x.includes("守備") || x.includes("防御"));
       if (idxName < 0 || idxDef < 0) continue;
 
+      const map = {};
       for (const tr of rowsOf(t)){
         const cells = Array.from(tr.children);
         const name = (cells[idxName]?.textContent || "").trim();
         if (!name) continue;
-        const defNums = parseNums(cells[idxDef]?.textContent || "");
-        if (!defNums.length) continue;
-        map[name] = defNums[0];
+        const nums = parseNums(cells[idxDef]?.textContent || "");
+        if (!nums.length) continue;
+        map[name] = nums[0];
       }
       if (Object.keys(map).length) return map;
     }
     return null;
   }
 
-  const DEFAULT_CONFIG_URL = "dq_damage_calc_private.json";
-  const BUILTIN_CONFIG = {
-    version: 1,
-    base_state: { luck_ref: "最大", mode_ref: "バッチリぼうけん" },
-    random_range: { min: 0.90, max: 1.10 },
-    modes: { "バッチリぼうけん": 1.0, "楽ちんプレイ": 1.2 },
+  function extractSkillList(doc){
+    // 「倍率」列がある表
+    const tables = Array.from(doc.querySelectorAll("table"));
+    for (const t of tables){
+      const h = headersOf(t);
+      if (!h.length) continue;
+      const idxName = h.findIndex(x => x.includes("名前") || x.includes("名称") || x.includes("技"));
+      const idxMult = h.findIndex(x => x.includes("倍率"));
+      if (idxName < 0 || idxMult < 0) continue;
 
-    luck_multipliers: {
-      DQ1: { "最小": 0.753404, "中": 0.856676, "最大": 1.0 },
-      DQ2: { "最小": 0.660913083635202, "中": 0.83753922756278, "最大": 1.0 }
-    },
-    def_stage_multipliers: { down: { "1": 1.270721206, "3": 1.433799785, "6": 1.804518211 }, up: {} },
-    buffs: { bikilt: { label: "バイキルト", mult: 2.0 }, tame: { label: "ちからため", mult: 2.0 }, super_tame: { label: "超ちからため", mult: 3.0 }, ouen: { label: "おうえん", mult: 2.0 } },
-    games: {
-      DQ1: { formula_terms: [ { name: "atk", coef: 0.749991892417 }, { name: "def", coef: -0.264610864087 }, { name: "atk2", coef: -0.000498335818083 } ] },
-      DQ2: { formula_terms: [ { name: "atk", coef: 0.971654263609 }, { name: "def", coef: -0.387760162756 }, { name: "atk_def", coef: -0.00113383813267 }, { name: "def2", coef: 0.00055735581224 } ] }
-    }
-  };
-
-  let CFG = structuredClone(BUILTIN_CONFIG);
-  async function loadConfig(){
-    try{
-      const txt = await fetchText(DEFAULT_CONFIG_URL);
-      const obj = JSON.parse(txt);
-      if (obj && obj.games) CFG = obj;
-    }catch(e){}
-  }
-
-  const SRC = {
-    abilityCsv: "dq_data_ability.csv",
-    bossList: { DQ1: "dq1_boss_list.html", DQ2: "dq2_boss_list.html" },
-    db: { DQ1: "dq1_db.html", DQ2: "dq2_db.html" },
-    characterIndex: "dq_character.html"
-  };
-
-  let abilityRows = [];
-  let skillMap = { DQ1: [], DQ2: [] };
-  let enemyMap = { DQ1: [], DQ2: [] };
-  let luckThresholds = {};
-
-  function normalizeKey(s){ return (s || "").trim(); }
-
-  function buildLuckThresholds(){
-    const out = {};
-    abilityRows.forEach(r => {
-      const char = normalizeKey(r["キャラ名"]);
-      const lv = normalizeKey(r["レベル"]);
-      if (!char || !lv) return;
-      out[char] ||= {};
-      out[char][lv] = { low: safeNumber(r["運下限"], null), high: safeNumber(r["運上限"], null) };
-    });
-    luckThresholds = out;
-  }
-
-  function autoLuckBand(charName, lv, luckValue){
-    const c = normalizeKey(charName);
-    const L = String(lv ?? "").trim();
-    const luck = safeNumber(luckValue, null);
-    const t = luckThresholds?.[c]?.[L];
-    if (!t || t.low == null || t.high == null || luck == null) return null;
-    if (luck < t.low) return "最小";
-    if (luck <= t.high) return "中";
-    return "最大";
-  }
-
-  function pickMultiplier(map, key, fallback=1.0){
-    const v = map?.[key];
-    return Number.isFinite(v) ? v : fallback;
-  }
-
-  function interpolateStageTable(down, up){
-    function buildSide(src){
-      const known = Object.entries(src || {}).map(([k,v]) => [Number(k), Number(v)]).filter(([k,v]) => Number.isFinite(k) && Number.isFinite(v));
-      known.sort((a,b)=>a[0]-b[0]);
-      const arr = Array(7).fill(null);
-      arr[0] = 1.0;
-      known.forEach(([k,v]) => { if (k>=1 && k<=6) arr[k] = v; });
-      for (let i=1;i<=6;i++){
-        if (arr[i]!=null) continue;
-        let l=i-1; while(l>=0 && arr[l]==null) l--;
-        let r=i+1; while(r<=6 && arr[r]==null) r++;
-        if (l>=0 && r<=6 && arr[l]!=null && arr[r]!=null){
-          const t = (i-l)/(r-l);
-          arr[i] = arr[l] + (arr[r]-arr[l])*t;
-        } else if (l>=0 && arr[l]!=null) arr[i] = arr[l];
-        else if (r<=6 && arr[r]!=null) arr[i] = arr[r];
-        else arr[i] = 1.0;
+      const out = [];
+      for (const tr of rowsOf(t)){
+        const cells = Array.from(tr.children);
+        const name = (cells[idxName]?.textContent || "").trim();
+        if (!name) continue;
+        const nums = parseNums(cells[idxMult]?.textContent || "");
+        if (!nums.length) continue;
+        const normal = nums[0];
+        const eff = nums.length >= 2 ? nums[1] : null;
+        out.push({ name, mult: normal, multEff: eff });
       }
-      return arr;
+      if (out.length) return out;
     }
-    const downArr = buildSide(down);
-    const hasUp = up && Object.keys(up).length;
-    const upArr = hasUp ? buildSide(up) : downArr.map((v,i)=> i===0 ? 1.0 : (v ? (1.0/v) : 1.0));
-    return { downArr, upArr };
+    return null;
   }
 
-  function stageMultiplier(stage){
-    const s = Number(stage);
-    if (!Number.isFinite(s) || s===0) return 1.0;
-    const { downArr, upArr } = interpolateStageTable(CFG.def_stage_multipliers?.down, CFG.def_stage_multipliers?.up);
-    const k = Math.min(6, Math.max(1, Math.abs(s)));
-    return (s < 0) ? downArr[k] : upArr[k];
+  function extractCharacterLinks(doc){
+    // dq_character.html からキャラページのリンクを拾う
+    const out = [];
+    for (const a of Array.from(doc.querySelectorAll("a"))){
+      const href = (a.getAttribute("href") || "").trim();
+      if (!href || !href.endsWith(".html")) continue;
+      // characterページっぽい
+      if (!/dq_character_/i.test(href)) continue;
+      const name = (a.textContent || "").trim();
+      if (!name) continue;
+      out.push({ name, href });
+    }
+    return out.length ? out : null;
   }
 
-  function baseDamage(game, atk, def){
-    const g = CFG.games?.[game];
-    if (!g) return null;
-    let sum = 0;
-    for (const t of (g.formula_terms || [])){
-      const coef = Number(t.coef);
-      if (!Number.isFinite(coef)) continue;
-      let x = 0;
-      switch(String(t.name)){
-        case "atk": x = atk; break;
-        case "def": x = def; break;
-        case "atk2": x = atk*atk; break;
-        case "def2": x = def*def; break;
-        case "atk_def": x = atk*def; break;
-        default: x = 0; break;
+  function extractLuckInfoFromCharacter(doc, lv){
+    // 1) 運の良さ（ステータス表）
+    // 2) 運下限/運上限（運基準表）
+    const tables = Array.from(doc.querySelectorAll("table"));
+    let luck = null, low = null, high = null;
+
+    for (const t of tables){
+      const h = headersOf(t);
+      if (!h.length) continue;
+
+      const idxLv = h.findIndex(x => x === "LV" || x.includes("LV") || x.includes("レベル"));
+      if (idxLv < 0) continue;
+
+      const idxLuck = h.findIndex(x => x.includes("運の良さ") || (x.includes("運") && !x.includes("運下限") && !x.includes("運上限") && !x.includes("運基準")));
+      const idxLow = h.findIndex(x => x.includes("運下限"));
+      const idxHigh = h.findIndex(x => x.includes("運上限"));
+
+      for (const tr of rowsOf(t)){
+        const cells = Array.from(tr.children);
+        const lvCell = safeNumber((cells[idxLv]?.textContent || "").trim(), null);
+        if (lvCell === null) continue;
+        if (Math.trunc(lvCell) !== Math.trunc(lv)) continue;
+
+        if (idxLuck >= 0 && luck === null){
+          const n = safeNumber((cells[idxLuck]?.textContent || "").trim(), null);
+          if (n !== null) luck = n;
+        }
+        if (idxLow >= 0 && low === null){
+          const n = safeNumber((cells[idxLow]?.textContent || "").trim(), null);
+          if (n !== null) low = n;
+        }
+        if (idxHigh >= 0 && high === null){
+          const n = safeNumber((cells[idxHigh]?.textContent || "").trim(), null);
+          if (n !== null) high = n;
+        }
       }
-      sum += coef * x;
     }
-    return sum;
-  }
 
-  function totalMultiplier(params){
-    const { game, mode, luckBand, skillMult, bikiltOn, tameKey, manualMult, defStage } = params;
-    const modeMult = pickMultiplier(CFG.modes, mode, 1.0);
-    const luckMult = pickMultiplier(CFG.luck_multipliers?.[game], luckBand, 1.0);
-    const sk = safeNumber(skillMult, 1.0) ?? 1.0;
-    let buffMult = 1.0;
-    // バイキルトは併用可（2倍）
-    if (bikiltOn) buffMult *= (safeNumber(CFG.buffs?.bikilt?.mult, 2.0) ?? 2.0);
-    // ため系はどれか1つ
-    if (tameKey && tameKey !== "none") buffMult *= (safeNumber(CFG.buffs?.[tameKey]?.mult, 1.0) ?? 1.0);
-    const man = safeNumber(manualMult, 1.0) ?? 1.0;
-    const stageMult = stageMultiplier(defStage);
-    return modeMult * luckMult * sk * buffMult * man * stageMult;
-  }
-
-  function initStageSelect(){
-    const sel = $("defStage");
-    sel.innerHTML = "";
-    for (let s=-6; s<=6; s++){
-      const op = document.createElement("option");
-      op.value = String(s);
-      op.textContent = (s===0) ? "0（変化なし）" : (s<0 ? `防御↓ ${Math.abs(s)}段階` : `防御↑ ${s}段階`);
-      sel.appendChild(op);
+    if (low === null || high === null){
+      // まれに「運基準」表が別形式：列に「運基準」「運下限」「運上限」だけでLV無し
+      // この場合は拾えないので null のまま返す
     }
-    sel.value = "0";
-  }
 
-  const logs = [];
-  function renderLogs(){
-    const tbody = $("logTable").querySelector("tbody");
-    tbody.innerHTML = "";
-    logs.forEach((r, idx) => {
-      const tr = document.createElement("tr");
-      const cells = [ String(idx+1), r.game, r.enemy || "-", r.atk, r.def, r.luckBand, r.mode, r.skill || "通常", fmt(r.mult,3), r.mean, r.min + "〜" + r.max ];
-      cells.forEach((v,i)=>{
-        const td = document.createElement("td");
-        td.textContent = String(v);
-        if ([3,4,8,9,10].includes(i)) td.className="right";
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-  }
-
-  function setResultMain(mean, min, max){
-    $("resultMain").innerHTML = `${mean} <small>（最小〜最大: ${min}〜${max}）</small>`;
-  }
-  function setResultSub(text){ $("resultSub").textContent = text; }
-
-  function setBandCards(items){
-    const wrap = $("resultBands");
-    wrap.innerHTML = "";
-    if (!items || !items.length) return;
-    const row = document.createElement("div");
-    row.className = "row";
-    items.forEach(it => {
-      const div = document.createElement("div");
-      div.className = "col-4";
-      div.innerHTML = `<div class="card" style="margin:0;">
-        <div class="pill">${it.label}</div>
-        <div class="out" style="margin-top:8px;">${it.mean} <small>（${it.min}〜${it.max}）</small></div>
-        
-
-      </div>`;
-      row.appendChild(div);
-    });
-    wrap.appendChild(row);
-  }
-
-  function currentLuckBand(){
-    const sel = $("luckBand").value;
-    if (sel !== "auto") return sel;
-    const chara = $("chara").value;
-    const lv = safeNumber($("lv").value, null);
-    const luck = safeNumber($("luck").value, null);
-    const auto = autoLuckBand(chara, lv, luck);
-    return auto || "最大";
-  }
-
-  function updateLuckAutoLabel(){
-    const chara = $("chara").value;
-    const lv = safeNumber($("lv").value, null);
-    const luck = safeNumber($("luck").value, null);
-    const auto = autoLuckBand(chara, lv, luck);
-    const sel = $("luckBand");
-    const opt = Array.from(sel.options).find(o => o.value === "auto");
-    if (opt){
-      opt.textContent = auto ? `自動（${auto}）` : "自動";
-    }
-  }
-
-  function computeOnce(forcedStage=null){
-    const game = $("game").value;
-    const mode = $("mode").value;
-    const enemy = $("enemy").value;
-    const atk = safeNumber($("atk").value, null);
-    const def = safeNumber($("def").value, null);
-    const skill = $("skill").value;
-    const skillMult = safeNumber($("skillMult").value, 1.0) ?? 1.0;
-    const bikiltOn = $("bikilt").checked;
-    const tameKey = $("tame").value;
-    const manualMult = safeNumber($("manualMult").value, 1.0) ?? 1.0;
-    const defStage = forcedStage != null ? forcedStage : safeNumber($("defStage").value, 0) ?? 0;
-    const luckBand = currentLuckBand();
-    if (atk == null || def == null) return { error: "攻撃・防御を入力してください。" };
-    const base = baseDamage(game, atk, def);
-    if (base == null) return { error: "設定が読み込めませんでした。" };
-    const mult = totalMultiplier({ game, mode, luckBand, skillMult, bikiltOn, tameKey, manualMult, defStage });
-    const rr = CFG.random_range || {min:0.9,max:1.1};
-    const mean = base * mult;
-    const mn = mean * (safeNumber(rr.min,0.9) ?? 0.9);
-    const mx = mean * (safeNumber(rr.max,1.1) ?? 1.1);
-    return { game, mode, enemy, atk, def, luckBand, skill, mult, mean: roundDown(mean), min: roundDown(mn), max: roundDown(mx) };
-  }
-
-  function applyResult(){
-    const unknown = $("stageUnknown").checked;
-    if (!unknown){
-      const r = computeOnce();
-      if (r.error){ setResultMain("-", "-", "-"); setResultSub(r.error); setBandCards([]); return; }
-      setResultMain(r.mean, r.min, r.max);
-      const stage = safeNumber($("defStage").value, 0) ?? 0;
-      const stageText = (stage===0) ? "0" : (stage<0 ? `防御↓${Math.abs(stage)}` : `防御↑${stage}`);
-      setResultSub(`倍率合計: ${fmt(r.mult,3)} / 段階: ${stageText}`);
-      setBandCards([]);
-      return;
-    }
-    const stages = [-1, -3, -6, 1, 3, 6];
-    const items = [];
-    for (const s of stages){
-      const r = computeOnce(s);
-      if (r.error) continue;
-      items.push({ label: s<0 ? `防御↓${Math.abs(s)}段階` : `防御↑${s}段階`, mean: r.mean, min: r.min, max: r.max, stageText: s<0 ? `↓${Math.abs(s)}` : `↑${s}` });
-    }
-    if (!items.length){ setResultMain("-", "-", "-"); setResultSub("攻撃・防御を入力してください。"); setBandCards([]); return; }
-    const pick = items.find(x => x.label.includes("↓3")) || items[0];
-    setResultMain(pick.mean, pick.min, pick.max);
-    setResultSub("");
-    setBandCards(items);
-  }
-
-  function addLog(){
-    const unknown = $("stageUnknown").checked;
-    if (unknown){
-      const stages = [-1, -3, -6, 1, 3, 6];
-      for (const s of stages){
-        const r = computeOnce(s);
-        if (r.error) continue;
-        logs.push({ game: r.game, enemy: r.enemy, atk: r.atk, def: r.def, luckBand: r.luckBand, mode: r.mode, skill: r.skill, mult: r.mult, mean: r.mean, min: r.min, max: r.max });
-      }
-      renderLogs(); return;
-    }
-    const r = computeOnce();
-    if (r.error){ setResultSub(r.error); return; }
-    logs.push({ game: r.game, enemy: r.enemy, atk: r.atk, def: r.def, luckBand: r.luckBand, mode: r.mode, skill: r.skill, mult: r.mult, mean: r.mean, min: r.min, max: r.max });
-    renderLogs();
-  }
-
-  function downloadCsv(){
-    if (!logs.length){ alert("ログが空です。"); return; }
-    const headers = ["作品","敵","攻撃","防御","運基準","モード","技","倍率合計","平均","最小","最大"];
-    const lines = [headers.join(",")];
-    logs.forEach(r=>{
-      const row = [r.game, r.enemy||"", r.atk, r.def, r.luckBand, r.mode, r.skill||"", fmt(r.mult,6), r.mean, r.min, r.max]
-        .map(v => `"${String(v).replaceAll('"','""')}"`);
-      lines.push(row.join(","));
-    });
-    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "dq_damage_calc_log.csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  function clearOptions(sel, keepFirst=true){
-    while (sel.options.length > (keepFirst?1:0)) sel.remove(sel.options.length-1);
-  }
-
-  function guessDefenseField(obj){
-    const keys = Object.keys(obj||{});
-    const candidates = ["防御","防御力","守備","守備力","DEF","Def","def","守備値"];
-    for (const c of candidates){ const k = keys.find(k => k.trim() === c); if (k) return k; }
-    return keys.find(k => k.includes("防") || k.includes("守")) || null;
-  }
-
-  function guessNameField(obj){
-    const keys = Object.keys(obj||{});
-    const candidates = ["名前","敵名","敵","ボス名","モンスター名","ユニット名","名称"];
-    for (const c of candidates){ const k = keys.find(k => k.trim() === c); if (k) return k; }
-    return keys[0] || null;
-  }
-
-  async function loadAbility(){
-    try{
-      const txt = await fetchText(SRC.abilityCsv);
-      abilityRows = parseCSV(txt);
-      buildLuckThresholds();
-    }catch(e){ abilityRows = []; luckThresholds = {}; }
-  }
-
-  async function loadSkills(game){
-    try{
-      const list = await withIframe(SRC.db[game], (doc) => extractSkillList(doc));
-      const out = list || [];
-      // 先頭に通常攻撃
-      skillMap[game] = [{ name:"通常攻撃", type:"", mult:1.0, multEff:null }, ...out];
-    }catch(e){
-      skillMap[game] = [{ name:"通常攻撃", type:"", mult:1.0, multEff:null }];
-    }
-  }
-);
-      const typeRank = (t) => (t === "特技") ? 0 : (t === "超絶技") ? 1 : (t === "呪文") ? 2 : 9;
-      out.sort((a,b)=>{ const ra=typeRank(a.type), rb=typeRank(b.type); if (ra!==rb) return ra-rb; return a.name.localeCompare(b.name,"ja"); });
-      skillMap[game] = out;
-    }catch(e){ skillMap[game] = []; }
+    if (luck === null && low === null && high === null) return null;
+    return { luck, low, high };
   }
 
   async function loadEnemies(game){
-    try{
-      const defMap = await withIframe(SRC.db[game], (doc) => extractBossDefenseMap(doc)) || {};
-      const ordered = await withIframe(SRC.bossList[game], (doc) => extractBossOrder(doc)) || [];
-      const seen = new Set();
-      const out = [];
-      for (const it of ordered){
-        const name = String(it.name || "").trim();
-        if (!name || seen.has(name)) continue;
-        seen.add(name);
-        const def = Number.isFinite(it.def) ? it.def : (Number.isFinite(defMap[name]) ? defMap[name] : null);
-        out.push({ name, def });
-      }
-      enemyMap[game] = out;
-    }catch(e){
-      enemyMap[game] = [];
+    const defMap = await withIframe(SRC.db[game], (doc) => extractBossDefenseMap(doc)) || {};
+    const order = await withIframe(SRC.bossList[game], (doc) => extractBossOrder(doc)) || [];
+    const seen = new Set();
+    const out = [];
+    for (const it of order){
+      const name = String(it.name || "").trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const def = Number.isFinite(it.def) ? it.def : (Number.isFinite(defMap[name]) ? defMap[name] : null);
+      out.push({ name, def });
     }
+    enemyMap[game] = out;
   }
 
+  async function loadSkills(game){
+    const list = await withIframe(SRC.db[game], (doc) => extractSkillList(doc)) || [];
+    // 先頭に通常攻撃
+    skillMap[game] = [{ name:"通常攻撃", mult:1.0, multEff:null }, ...list];
+  }
+
+  async function loadCharacterIndex(){
+    const list = await withIframe(SRC.characterIndex, (doc) => extractCharacterLinks(doc)) || [];
+    // name->href
+    charPages.clear();
+    list.forEach(it => charPages.set(it.name, it.href));
+  }
+
+  function clearOptions(sel, keepEmpty){
+    const keep = keepEmpty ? 1 : 0;
+    while (sel.options.length > keep) sel.remove(keep);
+  }
 
   function refreshEnemySelect(){
     const game = $("game").value;
     const sel = $("enemy");
     clearOptions(sel, true);
-    enemyMap[game].forEach(it=>{
+    (enemyMap[game] || []).forEach(it => {
       const op = document.createElement("option");
       op.value = it.name;
-      op.textContent = it.name + (Number.isFinite(it.def) ? `（防御${it.def}）` : "");
-      op.dataset.def = Number.isFinite(it.def) ? String(it.def) : "";
+      op.textContent = it.name;
+      if (Number.isFinite(it.def)) op.dataset.def = String(it.def);
       sel.appendChild(op);
     });
   }
@@ -796,67 +553,354 @@
     const game = $("game").value;
     const sel = $("skill");
     clearOptions(sel, true);
-    (skillMap[game] || []).forEach(it=>{
+    (skillMap[game] || []).forEach(it => {
       const op = document.createElement("option");
       op.value = it.name;
       const hasEff = Number.isFinite(it.multEff) && it.multEff !== null && Math.abs(it.multEff - it.mult) > 1e-9;
-      op.textContent = hasEff
-        ? `${it.name}（通常${fmt(it.mult,3)} / 特効${fmt(it.multEff,3)}）`
-        : `${it.name}（倍率${fmt(it.mult,3)}）`;
+      op.textContent = hasEff ? `${it.name}（通常${fmt(it.mult,3)} / 特効${fmt(it.multEff,3)}）`
+                              : `${it.name}（倍率${fmt(it.mult,3)}）`;
       op.dataset.mult = String(it.mult);
       op.dataset.multEff = hasEff ? String(it.multEff) : "";
       sel.appendChild(op);
     });
-  });
+    // 未選択なら倍率1
+    if (!sel.value) $("skillMult").value = "1";
+    updateSkillButtons();
   }
 
-  function bind(){
-    $("btnCalc").addEventListener("click", () => { addLog(); applyResult(); });
-    $("btnClear").addEventListener("click", () => { logs.length=0; renderLogs(); applyResult(); });
-    $("btnCsv").addEventListener("click", downloadCsv);
-    $("setSkillNormal").addEventListener("click", () => { $("skillMult").value = "1.1"; applyResult(); });
-    $("setSkillEffective").addEventListener("click", () => { $("skillMult").value = "1.6"; applyResult(); });
+  function updateSkillButtons(){
+    const sel = $("skill");
+    const op = sel.options[sel.selectedIndex];
+    const normal = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+    const effRaw = op?.dataset?.multEff;
+    const eff = safeNumber(effRaw, null);
+    const btnN = $("setSkillNormal");
+    const btnE = $("setSkillEffective");
+    btnN.textContent = `通常(${fmt(normal,3)})`;
+    if (eff !== null){
+      btnE.disabled = false;
+      btnE.textContent = `特効(${fmt(eff,3)})`;
+    }else{
+      btnE.disabled = true;
+      btnE.textContent = `特効`;
+    }
+  }
 
-    const ids = ["game","mode","enemy","atk","def","skill","skillMult","bikilt","tame","manualMult","defStage","stageUnknown","chara","lv","luck","luckBand"];
-    ids.forEach(id=>{
-      $(id).addEventListener("change", () => {
-        if (id==="enemy"){
+  // ====== 運基準：自動判定 & 数値表示 ======
+  function decideLuckBand(game, luck, low, high){
+    if (!Number.isFinite(luck) || !Number.isFinite(low) || !Number.isFinite(high)) return null;
+    // 下限 >> 運 => 最小 / 下限<=運<=上限 => 中 / 上限<運 => 最大
+    if (luck < low) return "最小";
+    if (luck <= high) return "中";
+    return "最大";
+  }
+
+  function renderLuckBaseInfo(){
+    const el = $("luckBaseInfo");
+    if (!el) return;
+    const lv = safeNumber($("lv").value, null);
+    const luck = safeNumber($("luck").value, null);
+
+    if (!lastLuckInfo || lv === null){
+      el.textContent = "";
+      return;
+    }
+
+    const low = lastLuckInfo.low;
+    const high = lastLuckInfo.high;
+
+    // 3種類：下限 / 上限 / 現在
+    const parts = [];
+    if (Number.isFinite(low)) parts.push(`下限 ${Math.trunc(low)}`);
+    if (Number.isFinite(high)) parts.push(`上限 ${Math.trunc(high)}`);
+    if (Number.isFinite(luck)) parts.push(`運 ${Math.trunc(luck)}`);
+    el.textContent = parts.join(" / ");
+  }
+
+  async function updateLuckAuto(){
+    const bandSel = $("luckBand").value;
+    const chara = $("chara").value;
+    const lv = safeNumber($("lv").value, null);
+
+    lastLuckInfo = null;
+
+    if (!chara || lv === null){
+      renderLuckBaseInfo();
+      return;
+    }
+
+    // キャラページが分からない場合は何もしない
+    let href = charPages.get(chara) || null;
+    if (!href){
+      // 部分一致（select値にDQ1/DQ2が付く場合がある）
+      for (const [name, link] of charPages.entries()){
+        if (!name) continue;
+        if (name.includes(chara) || chara.includes(name)) { href = link; break; }
+      }
+    }
+    if (!href){
+      renderLuckBaseInfo();
+      return;
+    }
+
+    const info = await withIframe(href, (doc) => extractLuckInfoFromCharacter(doc, lv));
+    if (!info){
+      renderLuckBaseInfo();
+      return;
+    }
+
+    const luckInput = $("luck");
+    if ((luckInput.value || "").trim() === "" && Number.isFinite(info.luck)){
+      luckInput.value = String(Math.trunc(info.luck));
+    }
+
+    const game = $("game").value;
+    const luck = safeNumber(luckInput.value, null);
+    const low = info.low;
+    const high = info.high;
+    const autoBand = decideLuckBand(game, luck, low, high);
+
+    lastLuckInfo = { low, high, luck, band: autoBand };
+
+    renderLuckBaseInfo();
+
+    // 自動を選んでいる場合は計算だけ自動バンドを使う（select自体は自動のまま）
+    // なのでここでは select を書き換えない
+  }
+
+  function getEffectiveLuckBand(){
+    const bandSel = $("luckBand").value;
+    if (bandSel !== "auto") return bandSel;
+    return lastLuckInfo?.band || "中"; // 情報が無い時は中
+  }
+
+  // ====== 計算 ======
+  function compute(stageOverride=null){
+    const game = $("game").value;
+    const mode = $("mode").value;
+    const A = safeNumber($("atk").value, null);
+    const D = safeNumber($("def").value, null);
+    if (A === null || D === null) return { error: "攻撃/防御" };
+
+    const base = baseDamage(game, A, D);
+    const modeMult = MODE_MULT[mode] ?? 1.0;
+
+    const band = getEffectiveLuckBand();
+    const luckMult = (LUCK_MULT[game]?.[band] ?? 1.0);
+
+    const skillMult = safeNumber($("skillMult").value, 1.0) ?? 1.0;
+
+    const bikilt = $("bikilt").checked ? 2.0 : 1.0;
+
+    const tame = $("tame").value;
+    const tameMult = (tame === "tame" || tame === "ouen") ? 2.0 : (tame === "super_tame") ? 3.0 : 1.0;
+
+    const stage = stageOverride !== null ? stageOverride : safeNumber($("defStage").value, 0) ?? 0;
+    const defMult = stageMult(stage);
+
+    const totalMult = modeMult * luckMult * skillMult * bikilt * tameMult * defMult;
+
+    const meanRaw = base * totalMult;
+    const minRaw = meanRaw * RAND_MIN;
+    const maxRaw = meanRaw * RAND_MAX;
+
+    return {
+      game, mode, A, D,
+      enemy: $("enemy").value || "",
+      skill: $("skill").value || "",
+      band,
+      stage,
+      mult: totalMult,
+      mean: floor0(meanRaw),
+      min: floor0(minRaw),
+      max: floor0(maxRaw),
+    };
+  }
+
+  function setResultMain(text){
+    $("resultMain").textContent = text;
+  }
+
+  function renderResult(){
+    const unknown = $("stageUnknown").checked;
+
+    if (!unknown){
+      const r = compute();
+      if (r.error){ setResultMain("-"); return; }
+      setResultMain(`${r.mean}（${r.min}〜${r.max}）`);
+      return;
+    }
+
+    // 段階不明：↓1/3/6 と ↑1/3/6 を同時表示
+    const stages = [-1, -3, -6, 1, 3, 6];
+    const parts = [];
+    for (const s of stages){
+      const r = compute(s);
+      if (r.error) continue;
+      const tag = s < 0 ? `↓${Math.abs(s)}` : `↑${s}`;
+      parts.push(`${tag}:${r.mean}（${r.min}〜${r.max}）`);
+    }
+    setResultMain(parts.join(" / "));
+  }
+
+  // ====== ログ ======
+  const logs = [];
+
+  function renderLogs(){
+    const tbody = $("logTable").querySelector("tbody");
+    tbody.innerHTML = "";
+    for (const row of logs){
+      const tr = document.createElement("tr");
+      const cells = [
+        row.game, row.enemy, row.A, row.D, row.band, row.mode, row.skill,
+        fmt(row.mult, 6), row.mean, row.min, row.max
+      ];
+      for (const c of cells){
+        const td = document.createElement("td");
+        td.textContent = String(c);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  function addLog(){
+    const unknown = $("stageUnknown").checked;
+    const mode = $("mode").value;
+    if (!unknown){
+      const r = compute();
+      if (r.error) return;
+      logs.push(r);
+      renderLogs();
+      return;
+    }
+    const stages = [-1, -3, -6, 1, 3, 6];
+    for (const s of stages){
+      const r = compute(s);
+      if (r.error) continue;
+      logs.push(r);
+    }
+    renderLogs();
+  }
+
+  function downloadCsv(){
+    const headers = ["作品","敵","攻撃","防御","運基準","モード","技","倍率合計","平均","最小","最大"];
+    const rows = logs.map(r => [
+      r.game, r.enemy, r.A, r.D, r.band, r.mode, r.skill,
+      fmt(r.mult, 10), r.mean, r.min, r.max
+    ]);
+    const esc = (v) => {
+      const s = String(v ?? "");
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+      return s;
+    };
+    const csv = [headers, ...rows].map(r => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "damage_log.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ====== Bind ======
+  function bind(){
+    $("btnCalc").addEventListener("click", () => { addLog(); renderResult(); });
+    $("btnClear").addEventListener("click", () => { logs.length = 0; renderLogs(); renderResult(); });
+    $("btnCsv").addEventListener("click", downloadCsv);
+
+    $("setSkillNormal").addEventListener("click", () => {
+      const sel = $("skill");
+      const op = sel.options[sel.selectedIndex];
+      const m = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+      $("skillMult").value = String(m);
+      renderResult();
+    });
+    $("setSkillEffective").addEventListener("click", () => {
+      const sel = $("skill");
+      const op = sel.options[sel.selectedIndex];
+      const eff = safeNumber(op?.dataset?.multEff, null);
+      const m = eff !== null ? eff : (safeNumber(op?.dataset?.mult, 1.0) ?? 1.0);
+      $("skillMult").value = String(m);
+      renderResult();
+    });
+
+    const ids = ["game","mode","enemy","atk","def","skill","skillMult","bikilt","tame","defStage","stageUnknown","chara","lv","luck","luckBand"];
+    ids.forEach(id => {
+      $(id).addEventListener("change", async () => {
+        if (id === "enemy"){
           const sel = $("enemy");
           const op = sel.options[sel.selectedIndex];
           const d = safeNumber(op?.dataset?.def, null);
-          if (d != null) $("def").value = String(d);
+          if (d !== null) $("def").value = String(d);
         }
-        if (id==="skill"){
+        if (id === "skill"){
           const sel = $("skill");
           const op = sel.options[sel.selectedIndex];
           const m = safeNumber(op?.dataset?.mult, null);
-          if (m != null) $("skillMult").value = String(m);
-          else if (!$("skill").value) $("skillMult").value = "1";
+          if (m !== null) $("skillMult").value = String(m);
+          else $("skillMult").value = "1";
+          updateSkillButtons();
         }
-        if (id==="game"){ refreshEnemySelect(); refreshSkillSelect(); }
-        updateLuckAutoLabel();
-        applyResult();
+        if (id === "game"){
+          await bootGame($("game").value);
+        }
+        if (id === "chara" || id === "lv"){
+          await updateLuckAuto();
+        }
+        if (id === "luck"){
+          renderLuckBaseInfo();
+          // 自動バンドの再判定
+          if ($("luckBand").value === "auto"){
+            // lastLuckInfo に luck を反映させて band 更新
+            if (lastLuckInfo){
+              const game = $("game").value;
+              const luck = safeNumber($("luck").value, null);
+              lastLuckInfo.luck = luck;
+              lastLuckInfo.band = decideLuckBand(game, luck, lastLuckInfo.low, lastLuckInfo.high);
+            }
+          }
+        }
+        renderResult();
+      });
+      // inputでも即反映
+      $(id).addEventListener("input", () => {
+        if (id === "skillMult"){
+          const v = safeNumber($("skillMult").value, null);
+          if (v === null) $("skillMult").value = "1";
+        }
+        renderLuckBaseInfo();
+        renderResult();
       });
     });
-    ["lv","luck","chara"].forEach(id=> $(id).addEventListener("input", () => { updateLuckAutoLabel(); applyResult(); }));
+
+    // 初期値：倍率は1
+    if (($("skillMult").value || "").trim() === "") $("skillMult").value = "1";
+  }
+
+  async function bootGame(game){
+    try{
+      await loadEnemies(game);
+    }catch(e){}
+    try{
+      await loadSkills(game);
+    }catch(e){}
+    refreshEnemySelect();
+    refreshSkillSelect();
+    renderResult();
   }
 
   async function boot(){
-    initStageSelect();
-    $("mode").value = "バッチリぼうけん";
-    // 初期値（空欄→0化防止）
-    $("skillMult").value = $("skillMult").value.trim() ? $("skillMult").value : "1";
-    $("manualMult").value = $("manualMult").value.trim() ? $("manualMult").value : "1";
-    await loadConfig();
-    await loadAbility();
-    await Promise.all([ loadSkills("DQ1"), loadSkills("DQ2"), loadEnemies("DQ1"), loadEnemies("DQ2") ]);
-    refreshEnemySelect();
-    refreshSkillSelect();
-    updateLuckAutoLabel();
+    try{ await loadCharacterIndex(); }catch(e){}
+    await bootGame($("game").value);
+    await updateLuckAuto();
     bind();
-    applyResult();
+    renderResult();
   }
 
+  // ====== Start ======
   boot();
 })();
 </script>
