@@ -349,326 +349,185 @@
   let lastLuckInfo = null; // {low, high, luck, band}
   let skillEffMode = false; // false=通常, true=特効
 
-  function withIframe(url, tryExtract, timeoutMs=12000, intervalMs=120){
-    return new Promise((resolve) => {
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = url;
-      document.body.appendChild(iframe);
-
-      const start = Date.now();
-      let done = false;
-
-      const cleanup = () => { try { iframe.remove(); } catch(e){} };
-
-      const tick = () => {
-        if (done) return;
-        let doc = null;
-        try { doc = iframe.contentDocument; } catch(e){ doc = null; }
-        let val = null;
-        try { val = doc ? tryExtract(doc) : null; } catch(e){ val = null; }
-
-        if (val){
-          done = true; cleanup(); resolve(val); return;
-        }
-        if (Date.now() - start > timeoutMs){
-          done = true; cleanup(); resolve(null); return;
-        }
-        setTimeout(tick, intervalMs);
-      };
-
-      iframe.addEventListener("load", () => setTimeout(tick, intervalMs));
-      iframe.addEventListener("error", () => { done = true; cleanup(); resolve(null); });
-    });
-  }
-
-  function rowsOf(t){
-    const tbody = t.querySelector("tbody");
-    if (tbody) return Array.from(tbody.querySelectorAll("tr"));
-    return Array.from(t.querySelectorAll("tr")).slice(1);
-  }
-  function headersOf(t){
-    const tr = t.querySelector("thead tr") || t.querySelector("tr");
-    if (!tr) return [];
-    return Array.from(tr.children).map(c => (c.textContent||"").trim());
-  }
-  function parseNums(text){
-    const s = String(text||"").replace(/,/g," ");
-    const ms = s.match(/-?\d+(?:\.\d+)?/g) || [];
-    return ms.map(Number).filter(n => Number.isFinite(n));
-  }
-
   
-function extractEnemyListFromBossList(doc){
-    // ボス一覧はJSで生成されることが多いので、「a[href]が多いtable」を採用
-    const tables = Array.from(doc.querySelectorAll("table"));
-    let best = null;
-    let bestCount = 0;
+  // ====== CSV helpers (no iframe) ======
+  async function fetchText(url){
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch failed: ${url} (${res.status})`);
+    return await res.text();
+  }
 
-    for (const t of tables){
-      const rows = rowsOf(t);
-      let count = 0;
-      for (const tr of rows){
-        const a = tr.querySelector("a[href]");
-        if (!a) continue;
-        const name = (a.textContent || "").trim();
-        const href = (a.getAttribute("href") || "").trim();
-        if (!name || !href) continue;
-        count++;
-      }
-      if (count > bestCount){
-        bestCount = count;
-        best = t;
-      }
-    }
-
-    if (!best || bestCount === 0) return null;
-
+  function parseCSVLine(line){
     const out = [];
-    for (const tr of rowsOf(best)){
-      const a = tr.querySelector("a[href]");
-      if (!a) continue;
-      const name = (a.textContent || "").trim();
-      const href = (a.getAttribute("href") || "").trim();
-      if (!name || !href) continue;
-      out.push({ name, href });
+    let cur = "";
+    let inQ = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (inQ){
+        if (ch === '"'){
+          if (line[i+1] === '"'){ cur += '"'; i++; }
+          else { inQ = false; }
+        } else {
+          cur += ch;
+        }
+      } else {
+        if (ch === '"'){ inQ = true; }
+        else if (ch === ','){ out.push(cur); cur=""; }
+        else { cur += ch; }
+      }
     }
-    return out.length ? out : null;
+    out.push(cur);
+    return out;
   }
 
-  function extractDefenseFromEnemyPage(doc){
-    // 1) tableのth/td
-    for (const tr of Array.from(doc.querySelectorAll("tr"))){
-      const cells = Array.from(tr.children);
-      for (let i=0;i<cells.length-1;i++){
-        const label = (cells[i].textContent || "").trim();
-        if (!label) continue;
-        if (/(守備力|防御力|守備|防御|みのまもり)/.test(label)){
-          const nums = parseNums(cells[i+1].textContent || "");
-          if (nums.length) return nums[0];
-        }
-      }
+  function parseCSV(text){
+    const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+    const nonEmpty = lines.filter(l => l !== "");
+    if (nonEmpty.length === 0) return { header: [], rows: [] };
+    const header = parseCSVLine(nonEmpty[0]).map(h => (h||"").trim());
+    const rows = [];
+    for (let i=1;i<nonEmpty.length;i++){
+      const cols = parseCSVLine(nonEmpty[i]);
+      if (cols.every(v => (v||"").trim()==="")) continue;
+      const obj = {};
+      header.forEach((h, idx) => obj[h] = (cols[idx] ?? "").trim());
+      rows.push(obj);
     }
-
-    // 2) dl/dt/dd
-    for (const dt of Array.from(doc.querySelectorAll("dt"))){
-      const label = (dt.textContent || "").trim();
-      if (!label) continue;
-      if (/(守備力|防御力|守備|防御|みのまもり)/.test(label)){
-        const dd = dt.nextElementSibling;
-        if (dd && dd.tagName === "DD"){
-          const nums = parseNums(dd.textContent || "");
-          if (nums.length) return nums[0];
-        }
-      }
-    }
-
-    // 3) 文字列パターン
-    const text = doc.body ? (doc.body.innerText || "") : "";
-    const m = text.match(/(?:守備力|防御力|守備|防御|みのまもり)\s*[:：]?\s*(\d+)/);
-    if (m) return Number(m[1]);
-
-    return null;
+    return { header, rows };
   }
 
-  function extractHpFromEnemyPage(doc){
-    // 1) tableのth/td
-    for (const tr of Array.from(doc.querySelectorAll("tr"))){
-      const cells = Array.from(tr.children);
-      for (let i=0;i<cells.length-1;i++){
-        const label = (cells[i].textContent || "").trim();
-        if (!label) continue;
-        if (/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)/.test(label)){
-          const nums = parseNums(cells[i+1].textContent || "");
-          if (nums.length) return nums[0];
-        }
-      }
-    }
-
-    // 2) dl/dt/dd
-    for (const dt of Array.from(doc.querySelectorAll("dt"))){
-      const label = (dt.textContent || "").trim();
-      if (!label) continue;
-      if (/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)/.test(label)){
-        const dd = dt.nextElementSibling;
-        if (dd && dd.tagName === "DD"){
-          const nums = parseNums(dd.textContent || "");
-          if (nums.length) return nums[0];
-        }
-      }
-    }
-
-    // 3) 文字列パターン
-    const text = doc.body ? (doc.body.innerText || "") : "";
-    const m = text.match(/(?:HP|ＨＰ|体力|たいりょく|ヒットポイント)\s*[:：]?\s*(\d+)/);
-    if (m) return Number(m[1]);
-
-    return null;
-  }
-
-  function extractEnemyStatsFromEnemyPage(doc){
-    const def = extractDefenseFromEnemyPage(doc);
-    const hp = extractHpFromEnemyPage(doc);
-    if (def === null && hp === null) return null;
-    return { def, hp };
-  }
-
-  function extractSkillList(doc){
-    // 「倍率」列がある表
-    const tables = Array.from(doc.querySelectorAll("table"));
-    for (const t of tables){
-      const h = headersOf(t);
-      if (!h.length) continue;
-      // アイテム/装備表（種別あり）を除外
-      if (h.some(x => String(x||"").includes("種別"))) continue;
-      const idxName = h.findIndex(x => x.includes("名前") || x.includes("名称") || x.includes("技"));
-      const idxMult = h.findIndex(x => x.includes("倍率"));
-      if (idxName < 0 || idxMult < 0) continue;
-
-      const out = [];
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const name = (cells[idxName]?.textContent || "").trim();
-        if (!name) continue;
-        const nums = parseNums(cells[idxMult]?.textContent || "");
-        if (!nums.length) continue;
-        const normal = nums[0];
-        const eff = nums.length >= 2 ? nums[1] : null;
-        out.push({ name, mult: normal, multEff: eff });
-      }
-      if (out.length) return out;
+  function pickKey(header, patterns){
+    for (const pat of patterns){
+      const re = (pat instanceof RegExp) ? pat : new RegExp(pat, "i");
+      const hit = header.find(h => re.test(h));
+      if (hit) return hit;
     }
     return null;
   }
 
-  function extractWeaponList(doc){
-    // ヘッダに「種別」「名前」「倍率」がある表を探す（並び順は維持）
-    const tables = Array.from(doc.querySelectorAll("table"));
-    for (const t of tables){
-      const h = headersOf(t);
-      if (!h.length) continue;
-      const idxKind = h.findIndex(x => String(x||"").includes("種別"));
-      const idxName = h.findIndex(x => String(x||"").includes("名前") || String(x||"").includes("名称"));
-      const idxMult = h.findIndex(x => String(x||"").includes("倍率"));
-      if (idxKind < 0 || idxName < 0 || idxMult < 0) continue;
-
-      const out = [];
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const kind = (cells[idxKind]?.textContent || "").trim();
-        if (!kind) continue;
-        // 「武器」だけ対象（表記ゆれを吸収）
-        if (!/武器/.test(kind)) continue;
-
-        const name = (cells[idxName]?.textContent || "").trim();
-        if (!name) continue;
-
-        const nums = parseNums(cells[idxMult]?.textContent || "");
-        if (!nums.length) continue;
-        const mult = nums[0];
-        if (!Number.isFinite(mult)) continue;
-
-        out.push({ name, mult });
-      }
-      if (out.length) return out;
-    }
-    return null;
+  function toNum(v){
+    const n = Number(String(v ?? "").replace(/,/g,"").trim());
+    return Number.isFinite(n) ? n : null;
   }
 
+  // ====== Data sources ======
+  const CSV_SRC = {
+    boss: { DQ1: "dq1_boss_multiunit.csv", DQ2: "dq2_boss_multiunit.csv" },
+    items: { DQ1: "data/dq1_items.csv", DQ2: "data/dq2_items.csv" },
+    spells:{ DQ1: "data/dq1_spells.csv", DQ2: "data/dq2_spells.csv" },
+    ability: "dq_data_ability.csv",
+  };
 
-  function extractCharacterLinks(doc){
-    // dq_character.html からキャラページのリンクを拾う
-    const out = [];
-    for (const a of Array.from(doc.querySelectorAll("a"))){
-      const href = (a.getAttribute("href") || "").trim();
-      if (!href || !href.endsWith(".html")) continue;
-      // characterページっぽい
-      if (!/dq_character_/i.test(href)) continue;
-      const name = (a.textContent || "").trim();
-      if (!name) continue;
-      out.push({ name, href });
-    }
-    return out.length ? out : null;
-  }
-
-  function extractLuckInfoFromCharacter(doc, lv){
-    // 1) 運の良さ（ステータス表）
-    // 2) 運下限/運上限（運基準表）
-    const tables = Array.from(doc.querySelectorAll("table"));
-    let luck = null, low = null, high = null;
-
-    for (const t of tables){
-      const h = headersOf(t);
-      if (!h.length) continue;
-
-      const idxLv = h.findIndex(x => {
-        const s = String(x || "").trim();
-        return /^(?:Lv|LV)$/i.test(s) || s.includes("レベル");
-      });
-      if (idxLv < 0) continue;
-
-      const idxLuck = h.findIndex(x => {
-        const s = String(x || "").trim();
-        return /(運.?の.?良さ|運のよさ|うんのよさ)/.test(s);
-      });
-      const idxLow = h.findIndex(x => String(x || "").includes("運下限"));
-      const idxHigh = h.findIndex(x => String(x || "").includes("運上限"));
-
-      for (const tr of rowsOf(t)){
-        const cells = Array.from(tr.children);
-        const lvCell = safeNumber((cells[idxLv]?.textContent || "").trim(), null);
-        if (lvCell === null) continue;
-        if (Math.trunc(lvCell) !== Math.trunc(lv)) continue;
-
-        if (idxLuck >= 0 && luck === null){
-          const n = safeNumber((cells[idxLuck]?.textContent || "").trim(), null);
-          if (n !== null) luck = n;
-        }
-        if (idxLow >= 0 && low === null){
-          const n = safeNumber((cells[idxLow]?.textContent || "").trim(), null);
-          if (n !== null) low = n;
-        }
-        if (idxHigh >= 0 && high === null){
-          const n = safeNumber((cells[idxHigh]?.textContent || "").trim(), null);
-          if (n !== null) high = n;
-        }
-      }
-    }
-
-    if (luck === null && low === null && high === null) return null;
-    return { luck, low, high };
-  }
-
-
+  // ====== Loaders ======
   async function loadEnemies(game){
-    let list = await withIframe(SRC.bossList[game], (doc) => extractEnemyListFromBossList(doc)) || [];
+    const text = await fetchText(CSV_SRC.boss[game]);
+    const { header, rows } = parseCSV(text);
 
-    // DQ1/DQ2混入対策：hrefに dq1 / dq2 が含まれる場合はそれを優先
-    const key = (game === "DQ1") ? "dq1" : "dq2";
-    const filtered = list.filter(it => ((it.href || "").toLowerCase().includes(key)));
-    if (filtered.length) list = filtered;
+    const keyName = pickKey(header, [/ボス戦名/, /敵.*名/, /ボス.*名/, /敵/, /名前/, /名称/]);
+    const keyDef  = pickKey(header, [/守備/, /防御/, /みのまもり/]);
+    const keyHP   = pickKey(header, [/^HP$/i, /ＨＰ/, /ヒットポイント/, /最大HP/, /最大ＨＰ/]);
+    const keyType = pickKey(header, [/種別/, /区分/, /カテゴリ/, /ユニット/]);
 
-    enemyMap[game] = list.map(it => ({ name: it.name, href: it.href, def: null, hp: null }));
-  }
+    const byName = new Map();
+    const order = [];
 
-  async function loadSkills(game){
-    const list = await withIframe(SRC.db[game], (doc) => extractSkillList(doc)) || [];
-    skillMap[game] = list;
+    for (const r of rows){
+      const name = (keyName ? r[keyName] : "")?.trim();
+      if (!name) continue;
+
+      const def = keyDef ? toNum(r[keyDef]) : null;
+      const hp  = keyHP ? toNum(r[keyHP]) : null;
+      const typ = keyType ? (r[keyType]||"").trim() : "";
+
+      // すでに登録済みなら「ボス」行を優先して上書き
+      if (!byName.has(name)){
+        byName.set(name, { name, def, hp });
+        order.push(name);
+      } else if (typ && /ボス/.test(typ)){
+        byName.set(name, { name, def, hp });
+      }
+    }
+
+    enemyMap[game] = order.map(n => byName.get(n));
   }
 
   async function loadWeapons(game){
-    const list = await withIframe(SRC.db[game], (doc) => extractWeaponList(doc)) || [];
+    const text = await fetchText(CSV_SRC.items[game]);
+    const { header, rows } = parseCSV(text);
+
+    const keyType = pickKey(header, [/^種別$/, /カテゴリ/]) || "種別";
+    const keyName = pickKey(header, [/^名前$/, /名称/]) || "名前";
+    const keyMult = pickKey(header, [/倍率/]) || "倍率";
+
+    const list = [];
+    for (const r of rows){
+      const t = (r[keyType]||"").trim();
+      if (!/武器/.test(t)) continue;
+      const m = toNum(r[keyMult]);
+      if (!Number.isFinite(m)) continue;
+      const nm = (r[keyName]||"").trim();
+      if (!nm) continue;
+      list.push({ name: nm, mult: m });
+    }
     weaponMap[game] = list;
   }
 
-  async function loadCharacterIndex(){
-    const list = await withIframe(SRC.characterIndex, (doc) => extractCharacterLinks(doc)) || [];
-    // name->href
-    charPages.clear();
-    list.forEach(it => charPages.set(it.name, it.href));
+  async function loadSkills(game){
+    const text = await fetchText(CSV_SRC.spells[game]);
+    const { header, rows } = parseCSV(text);
+
+    const keyName = pickKey(header, [/^名前$/, /名称/, /呪文/, /特技/, /技/]);
+    const keyMult = pickKey(header, [/倍率/]);
+    const keyEff  = pickKey(header, [/特効.*倍率/, /弱点.*倍率/, /特効/, /弱点/]);
+
+    const list = [];
+    for (const r of rows){
+      const nm = (keyName ? (r[keyName]||"") : "").trim();
+      if (!nm) continue;
+
+      const m = keyMult ? toNum(r[keyMult]) : null;
+      const e = keyEff ? toNum(r[keyEff]) : null;
+
+      // 倍率が無い行はスキップ（検索用など）
+      if (!Number.isFinite(m) && !Number.isFinite(e)) continue;
+
+      list.push({ name: nm, mult: (m ?? 1), multEff: e });
+    }
+    skillMap[game] = list;
   }
 
-  function clearOptions(sel, keepEmpty){
+  // 運基準・運下限・運上限（＋運のよさ）を、dq_data_ability.csv から読む
+  const abilityIndex = new Map(); // key: char|lv -> {luck, base, low, high}
+
+  async function loadAbility(){
+    const text = await fetchText(CSV_SRC.ability);
+    const { header, rows } = parseCSV(text);
+
+    const keyChar = pickKey(header, [/キャラ/, /キャラクタ/, /キャラ名/, /^名前$/]);
+    const keyLv   = pickKey(header, [/^Lv$/i, /レベル/]);
+    const keyLuck = pickKey(header, [/うんのよさ/, /運のよさ/, /運の良さ/, /運$/]);
+    const keyBase = pickKey(header, [/運基準/]);
+    const keyLow  = pickKey(header, [/運下限/]);
+    const keyHigh = pickKey(header, [/運上限/]);
+
+    abilityIndex.clear();
+    for (const r of rows){
+      const ch = (keyChar ? (r[keyChar]||"") : "").trim();
+      const lv = keyLv ? toNum(r[keyLv]) : null;
+      if (!ch || lv === null) continue;
+      const info = {
+        luck: keyLuck ? toNum(r[keyLuck]) : null,
+        base: keyBase ? toNum(r[keyBase]) : null,
+        low:  keyLow  ? toNum(r[keyLow])  : null,
+        high: keyHigh ? toNum(r[keyHigh]) : null,
+      };
+      abilityIndex.set(`${ch}|${lv}`, info);
+    }
+  }
+
+  // 互換のため残す（旧設計の名残）
+  async function loadCharacterIndex(){ /* no-op */ }
+function clearOptions(sel, keepEmpty){
     const keep = keepEmpty ? 1 : 0;
     while (sel.options.length > keep) sel.remove(keep);
   }
@@ -837,21 +696,7 @@ function refreshSkillSelect(){
       return;
     }
 
-    // キャラページが分からない場合は何もしない
-    let href = charPages.get(chara) || null;
-    if (!href){
-      // 部分一致（select値にDQ1/DQ2が付く場合がある）
-      for (const [name, link] of charPages.entries()){
-        if (!name) continue;
-        if (name.includes(chara) || chara.includes(name)) { href = link; break; }
-      }
-    }
-    if (!href){
-      renderLuckBaseInfo();
-      return;
-    }
-
-    const info = await withIframe(href, (doc) => extractLuckInfoFromCharacter(doc, lv));
+    const info = abilityIndex.get(`${chara}|${lv}`) || null;
     if (!info){
       renderLuckBaseInfo();
       return;
@@ -864,16 +709,20 @@ function refreshSkillSelect(){
 
     const game = $("game").value;
     const luck = safeNumber(luckInput.value, null);
-    const low = info.low;
-    const high = info.high;
+
+    const low = Number.isFinite(info.low) ? info.low : null;
+    const high = Number.isFinite(info.high) ? info.high : null;
+    const base = Number.isFinite(info.base) ? info.base : null;
+
     const autoBand = decideLuckBand(game, luck, low, high);
 
-    lastLuckInfo = { low, high, luck, band: autoBand };
+    lastLuckInfo = { low, high, base };
 
     renderLuckBaseInfo();
 
-    // 自動を選んでいる場合は計算だけ自動バンドを使う（select自体は自動のまま）
-    // なのでここでは select を書き換えない
+    if (bandSel === "auto" && autoBand){
+      $("luckBand").value = autoBand;
+    }
   }
 
   function getEffectiveLuckBand(){
@@ -1085,26 +934,6 @@ function refreshSkillSelect(){
           if (h0 !== null){
             $("hp").value = String(h0);
           }
-
-          const href = (op?.dataset?.href || "").trim();
-          const needFetch = (d0 === null) || (h0 === null);
-          if (needFetch && href){
-            const stats = await withIframe(href, (doc) => extractEnemyStatsFromEnemyPage(doc));
-            if (stats){
-              if (stats.def !== null){
-                op.dataset.def = String(stats.def);
-                $("def").value = String(stats.def);
-                const item = (enemyMap[game] || []).find(x => x.name === op.value);
-                if (item) item.def = stats.def;
-              }
-              if (stats.hp !== null){
-                op.dataset.hp = String(stats.hp);
-                $("hp").value = String(stats.hp);
-                const item = (enemyMap[game] || []).find(x => x.name === op.value);
-                if (item) item.hp = stats.hp;
-              }
-            }
-          }
         }
         if (id === "skill"){
           const sel = $("skill");
@@ -1175,7 +1004,7 @@ function refreshSkillSelect(){
 
   async function boot(){
     initDefStageOptions();
-    try{ await loadCharacterIndex(); }catch(e){}
+    try{ await loadAbility(); }catch(e){}
     await bootGame($("game").value);
     await updateLuckAuto();
     bind();
