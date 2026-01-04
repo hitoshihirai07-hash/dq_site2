@@ -6,36 +6,81 @@
   <title>DQI・Ⅱダメージ計算</title>
   <link rel="stylesheet" href="theme.css" />
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
-    .dqdc-wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
-    .dqdc-card { border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 14px; margin: 12px 0; background: rgba(0,0,0,.06); }
-    .dqdc-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
-    .dqdc-col-12{grid-column: span 12;}
-    .dqdc-col-6{grid-column: span 6;}
-    .dqdc-col-4{grid-column: span 4;}
-    .dqdc-col-3{grid-column: span 3;}
-    .dqdc-col-2{grid-column: span 2;}
-    label { display:block; font-size: 13px; opacity:.9; margin-bottom:6px; }
-    input, select, button { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.65); color: inherit; }
-    input[type="checkbox"]{ width:auto; }
-    button { cursor: pointer; }
-    .dqdc-muted { opacity: .75; font-size: 13px; }
-    .pill { display:inline-block; padding: 4px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; font-size: 12px; opacity:.9; }
-    .dqdc-out { font-size: 20px; font-weight: 700; }
-    .dqdc-out small{ font-size: 13px; font-weight: 500; opacity:.8; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid rgba(255,255,255,.12); padding: 8px; font-size: 13px; text-align:left; vertical-align: top; }
-    .btn-row{ display:flex; gap:6px; margin-top:6px; }
-    .btn-mini{ width:auto; padding:6px 10px; border-radius:999px; font-size:12px; }
-    .dqdc-actions { display:flex; gap: 8px; flex-wrap: wrap; }
-    .dqdc-actions button { width: auto; }
-    .dqdc-right { text-align:right; }
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      margin:0;
+    }
+    .dqdc-wrap{max-width:1200px;margin:0 auto;padding:16px;}
+    .dqdc-layout{display:flex;gap:14px;align-items:flex-start;}
+    .dqdc-panel-left{flex:0 0 560px;max-width:560px;min-width:320px;}
+    .dqdc-panel-right{flex:1 1 auto;min-width:320px;}
+    @media (max-width: 980px){
+      .dqdc-layout{flex-direction:column;}
+      .dqdc-panel-left{flex:1 1 auto;max-width:none;}
+      .dqdc-panel-right{min-width:0;}
+    }
+
+    .dqdc-card{
+      border-radius:14px;
+      padding:14px;
+      background: rgba(255,255,255,.50);
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      backdrop-filter: blur(4px);
+    }
+    h1{margin:0 0 12px 0;font-size:20px;}
+    h2{margin:0 0 10px 0;font-size:16px;}
+
+    .dqdc-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:end;}
+    .dqdc-col-12{grid-column:span 12;}
+    .dqdc-col-6{grid-column:span 6;}
+    .dqdc-col-4{grid-column:span 4;}
+    .dqdc-col-3{grid-column:span 3;}
+    .dqdc-col-2{grid-column:span 2;}
+    .dqdc-col-1{grid-column:span 1;}
+    @media (max-width: 560px){
+      .dqdc-col-6,.dqdc-col-4,.dqdc-col-3,.dqdc-col-2{grid-column:span 12;}
+    }
+
+    label{display:block;font-size:12px;opacity:.85;margin:0 0 4px 0;}
+    input, select{
+      width:100%;
+      min-width:0;
+      box-sizing:border-box;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.14);
+      background: rgba(255,255,255,.90);
+      outline:none;
+    }
+    input:focus, select:focus{border-color: rgba(0,0,0,.30);}
+
+    .dqdc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+    button{
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.18);
+      background: rgba(255,255,255,.85);cursor:pointer;
+    }
+    button:hover{filter:brightness(0.98);}
+    button:disabled{opacity:.55;cursor:not-allowed;}
+    .btn-mini{padding:7px 10px;border-radius:999px;font-size:12px;}
+    .dqdc-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .dqdc-muted{opacity:.75;font-size:12px;}
+    .dqdc-right{text-align:right;}
+
+    .dqdc-kv{display:grid;grid-template-columns:1fr;gap:8px;}
+    .dqdc-result-box{border-radius:12px;padding:12px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.10);}
+    .dqdc-big{font-size:20px;font-weight:700;}
+    .dqdc-range{font-size:13px;opacity:.85;}
+    .dqdc-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .dqdc-table th,.dqdc-table td{border-bottom:1px solid rgba(0,0,0,.10);padding:6px 6px;vertical-align:top;}
+    .dqdc-table th{position:sticky;top:0;background:rgba(255,255,255,.92);z-index:1;}
+    .dqdc-table-wrap{max-height:340px;overflow:auto;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.55);}
   </style>
 </head>
 <body>
   <main class="dqdc-wrap page-main">
     <h1>DQI・Ⅱダメージ計算</h1>
-<section class="dqdc-card">
+<div class="dqdc-layout">
+    <section class="dqdc-card dqdc-panel-left">
       <h2 style="margin:0 0 10px 0;font-size:16px;">入力</h2>
 
       <div class="dqdc-grid">
@@ -206,11 +251,11 @@
       <div class="dqdc-actions" style="margin-top:12px;">
         <button id="btnCalc">計算してログに追加</button>
         <button id="btnClear" type="button">ログ全消し</button>
-        <button id="btnCsv" type="button">ログをCSVでDL</button>
-      </div>
+</div>
     </section>
 
-    <section class="dqdc-card">
+    <div class="dqdc-panel-right">
+      <section class="dqdc-card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">結果</h2>
 
       <div id="resultMain" class="dqdc-out">-</div>
@@ -219,7 +264,7 @@
       <div id="resultBands" style="margin-top:10px;"></div>
     </section>
 
-    <section class="dqdc-card">
+      <section class="dqdc-card">
       <h2 style="margin:0 0 10px 0;font-size:16px;">ログ一覧</h2>
       
 
@@ -246,6 +291,8 @@
         </table>
       </div>
     </section>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -412,6 +459,45 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  function extractSkillMultFromText(txt){
+    const s = String(txt ?? "");
+    if (!s.trim()) return { normal: null, eff: null, nums: [] };
+
+    // 例: "通常1.1倍 / 特効1.6倍" みたいな表記
+    const mN = s.match(/通常[^0-9]*([0-9]+(?:\.[0-9]+)?)/);
+    const mE = s.match(/特効[^0-9]*([0-9]+(?:\.[0-9]+)?)/);
+
+    let normal = mN ? Number(mN[1]) : null;
+    let eff    = mE ? Number(mE[1]) : null;
+
+    const nums = [];
+    for (const m of s.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*倍/g)){
+      const n = Number(m[1]);
+      if (Number.isFinite(n) && n > 0 && n <= 20) nums.push(n);
+    }
+    // uniq
+    const uniq = [];
+    for (const n of nums){ if (!uniq.some(x => Math.abs(x - n) < 1e-9)) uniq.push(n); }
+
+    // 補完（通常/特効が取れなかった時）
+    if (normal === null && eff === null){
+      if (uniq.length >= 2){
+        normal = uniq[0];
+        eff = uniq[1];
+      } else if (uniq.length === 1){
+        normal = uniq[0];
+      }
+    } else if (normal !== null && eff === null){
+      const other = uniq.find(n => Math.abs(n - normal) > 1e-9);
+      if (other !== undefined) eff = other;
+    } else if (eff !== null && normal === null){
+      const other = uniq.find(n => Math.abs(n - eff) > 1e-9);
+      if (other !== undefined) normal = other;
+    }
+
+    return { normal, eff, nums: uniq };
+  }
+
   function rowIsForGame(cell, game){
     const s = String(cell ?? "").replace(/\s/g, "");
     if (!s) return true;
@@ -510,28 +596,52 @@
     weaponMap[game] = list;
   }
 
-  async function loadSkills(game){
+    async function loadSkills(game){
     const text = await fetchText(CSV_SRC.spells[game]);
     const { header, rows } = parseCSV(text);
 
     const keyName = pickKey(header, [/^名前$/, /名称/, /呪文/, /特技/, /技/]);
-    const keyMult = pickKey(header, [/倍率/]);
-    const keyEff  = pickKey(header, [/特効.*倍率/, /弱点.*倍率/, /特効/, /弱点/]);
+    const keyMult = pickKey(header, [/^倍率$/, /通常.*倍率/, /倍率.*通常/])
+      || header.find(h => /倍率/.test(h) && !/特効|弱点/.test(h));
+    const keyEff  = pickKey(header, [/特効.*倍率/, /弱点.*倍率/, /特効倍率/, /弱点倍率/, /倍率.*特効/, /倍率.*弱点/])
+      || header.find(h => /倍率/.test(h) && /特効|弱点/.test(h));
+    const keyEffect = pickKey(header, [/効果/, /説明/]);
+    const keyNote = pickKey(header, [/備考/, /注/, /メモ/]);
 
     const list = [];
     for (const r of rows){
       const nm = (keyName ? (r[keyName]||"") : "").trim();
       if (!nm) continue;
 
-      const m0 = keyMult ? toNum(r[keyMult]) : null;
-      const e0 = keyEff ? toNum(r[keyEff]) : null;
-      const m = (Number.isFinite(m0) && m0 > 0 ? m0 : null);
-      const e = (Number.isFinite(e0) && e0 > 0 ? e0 : null);
+      // 数値列（倍率/特効倍率）
+      let mult = keyMult ? toNum(r[keyMult]) : null;
+      let eff  = keyEff  ? toNum(r[keyEff])  : null;
+
+      mult = (Number.isFinite(mult) && mult > 0 ? mult : null);
+      eff  = (Number.isFinite(eff)  && eff  > 0 ? eff  : null);
+
+      // 効果/備考から拾える場合がある（例: "通常1.1倍 特効1.6倍" / "特効3.5倍"）
+      const hintText = [keyEffect ? (r[keyEffect]||"") : "", keyNote ? (r[keyNote]||"") : ""].join(" / ");
+      const hinted = extractSkillMultFromText(hintText);
+
+      if (mult === null && Number.isFinite(hinted.normal)) mult = hinted.normal;
+      if (eff  === null && Number.isFinite(hinted.eff))    eff  = hinted.eff;
+
+      // 片方しか取れないなら埋める
+      if (mult === null && eff !== null) mult = eff;
+      if (eff  === null && mult !== null){
+        // 2つ以上候補があるなら、multと違う方を特効として採用
+        const other = (hinted.nums || []).find(n => Number.isFinite(n) && Math.abs(n - mult) > 1e-9);
+        eff = (other !== undefined) ? other : mult;
+      }
 
       // 倍率が無い行はスキップ（空欄は無視）
-      if (!Number.isFinite(m) && !Number.isFinite(e)) continue;
+      if (!Number.isFinite(mult) && !Number.isFinite(eff)) continue;
 
-      list.push({ name: nm, mult: (m ?? 1), multEff: e });
+      // 特効が無い場合でも「通常/特効」を両方表示したいので同値で保持
+      if (!Number.isFinite(eff)) eff = mult;
+
+      list.push({ name: nm, mult, multEff: eff });
     }
     skillMap[game] = list;
   }
@@ -636,38 +746,47 @@ function clearOptions(sel, keepEmpty){
     $("weaponMult").value = String(mlt);
   }
 
-function refreshSkillSelect(){
+  function refreshSkillSelect(){
     const game = $("game").value;
     const sel = $("skill");
+    const prev = sel.value;
     clearOptions(sel, true);
+
     (skillMap[game] || []).forEach(it => {
       const op = document.createElement("option");
       op.value = it.name;
-      const hasEff = Number.isFinite(it.multEff) && it.multEff !== null && Math.abs(it.multEff - it.mult) > 1e-9;
-      op.textContent = hasEff ? `${it.name}（通常${fmt(it.mult,3)} / 特効${fmt(it.multEff,3)}）`
-                              : `${it.name}（倍率${fmt(it.mult,3)}）`;
-      op.dataset.mult = String(it.mult);
-      op.dataset.multEff = hasEff ? String(it.multEff) : "";
+
+      const normal = Number.isFinite(it.mult) ? it.mult : 1;
+      const eff = Number.isFinite(it.multEff) ? it.multEff : normal;
+
+      op.textContent = `${it.name}（通常${fmt(normal,3)} / 特効${fmt(eff,3)}）`;
+      op.dataset.mult = String(normal);
+      op.dataset.multEff = String(eff);
       sel.appendChild(op);
     });
-    // 未選択なら倍率1
+
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    }
+
     if (!sel.value) $("skillMult").value = "1";
     updateSkillButtons();
   }
 
-  function updateSkillButtons(){
+    function updateSkillButtons(){
     const sel = $("skill");
     const op = sel.options[sel.selectedIndex];
 
-    let normal = safeNumber(op?.dataset?.mult, 1.0);
-    let eff = safeNumber(op?.dataset?.multEff, null);
+    let normal = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+    let eff = safeNumber(op?.dataset?.multEff, normal);
+    if (eff === null) eff = normal;
 
     // DBに「特効」が無い場合の補完（よくある 1.1 / 1.6）
-    if (eff === null){
-      if (Math.abs(normal - 1.6) < 0.06){
-        eff = normal;
+    // ※ normal/eff が同じで、かつ名前が「○○斬り」「○○キラー」系なら推定値を入れる
+    const name = String(op?.value ?? "");
+    if (Math.abs(eff - normal) < 1e-9 && /(斬り|キラー|スレイヤー)/.test(name)){
+      if (Math.abs(normal - 1.0) < 1e-9 || Math.abs(normal - 1.1) < 0.06 || Math.abs(normal - 1.6) < 0.06){
         normal = 1.1;
-      } else if (Math.abs(normal - 1.1) < 0.06){
         eff = 1.6;
       }
     }
@@ -676,20 +795,10 @@ function refreshSkillSelect(){
     const btnE = $("setSkillEffective");
 
     btnN.textContent = `通常(${fmt(normal,3)})`;
-    if (eff !== null){
-      btnE.disabled = false;
-      btnE.textContent = `特効(${fmt(eff,3)})`;
-    } else {
-      btnE.disabled = true;
-      btnE.textContent = "特効";
-    }
+    btnE.textContent = `特効(${fmt(eff,3)})`;
+    btnE.disabled = false;
 
-    // 現在のモード（通常/特効）を反映
-    if (skillEffMode && eff !== null){
-      $("skillMult").value = String(eff);
-    } else {
-      $("skillMult").value = String(normal);
-    }
+    $("skillMult").value = String(skillEffMode ? eff : normal);
   }
 
 
@@ -929,9 +1038,7 @@ function refreshSkillSelect(){
   function bind(){
     $("btnCalc").addEventListener("click", () => { addLog(); renderResult(); });
     $("btnClear").addEventListener("click", () => { logs.length = 0; renderLogs(); renderResult(); });
-    $("btnCsv").addEventListener("click", downloadCsv);
-
-    $("setSkillNormal").addEventListener("click", () => {
+$("setSkillNormal").addEventListener("click", () => {
       const sel = $("skill");
       const op = sel.options[sel.selectedIndex];
       const m = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
@@ -940,13 +1047,13 @@ function refreshSkillSelect(){
       updateSkillButtons();
       renderResult();
     });
+
     $("setSkillEffective").addEventListener("click", () => {
       const sel = $("skill");
       const op = sel.options[sel.selectedIndex];
-      const eff = safeNumber(op?.dataset?.multEff, null);
-      const m = eff !== null ? eff : (safeNumber(op?.dataset?.mult, 1.0) ?? 1.0);
-      skillEffMode = (eff !== null);
-      $("skillMult").value = String(m);
+      const eff = safeNumber(op?.dataset?.multEff, safeNumber(op?.dataset?.mult, 1.0) ?? 1.0) ?? 1.0;
+      skillEffMode = true;
+      $("skillMult").value = String(eff);
       updateSkillButtons();
       renderResult();
     });
