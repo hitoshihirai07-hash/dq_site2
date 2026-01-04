@@ -406,9 +406,28 @@
   }
 
   function toNum(v){
-    const n = Number(String(v ?? "").replace(/,/g,"").trim());
+    const s = String(v ?? "").replace(/,/g,"").trim();
+    if (s === "") return null;
+    const n = Number(s);
     return Number.isFinite(n) ? n : null;
   }
+
+  function rowIsForGame(cell, game){
+    const s = String(cell ?? "").replace(/\s/g, "");
+    if (!s) return true;
+
+    // ざっくり正規化（全角DQ・ローマ数字）
+    let norm = s.replace(/ＤＱ/g, "DQ");
+    norm = norm.replace(/Ⅰ/g, "I").replace(/Ⅱ/g, "II");
+
+    const is1 = /DQ1|DQI|\bI\b|\b1\b/.test(norm);
+    const is2 = /DQ2|DQII|\bII\b|\b2\b/.test(norm);
+
+    if (game === "DQ1") return is1 && !is2;
+    if (game === "DQ2") return is2 && !is1;
+    return true;
+  }
+
 
   // ====== Data sources ======
   const CSV_SRC = {
@@ -427,11 +446,18 @@
     const keyDef  = pickKey(header, [/守備/, /防御/, /みのまもり/]);
     const keyHP   = pickKey(header, [/^HP$/i, /ＨＰ/, /ヒットポイント/, /最大HP/, /最大ＨＰ/]);
     const keyType = pickKey(header, [/種別/, /区分/, /カテゴリ/, /ユニット/]);
+    const keyGame = pickKey(header, [/^作品$/, /ゲーム/, /シリーズ/]);
 
     const byName = new Map();
     const order = [];
 
     for (const r of rows){
+      // 作品列がある場合はここでフィルタ（DQ1/DQ2混在CSV対策）
+      if (keyGame){
+        const gcell = (r[keyGame] ?? "");
+        if (!rowIsForGame(gcell, game)) continue;
+      }
+
       const name = (keyName ? r[keyName] : "")?.trim();
       if (!name) continue;
 
@@ -464,7 +490,7 @@
       const t = (r[keyType]||"").trim();
       if (!/武器/.test(t)) continue;
       const m = toNum(r[keyMult]);
-      if (!Number.isFinite(m)) continue;
+      if (!Number.isFinite(m) || m === 0) continue;
       const nm = (r[keyName]||"").trim();
       if (!nm) continue;
       list.push({ name: nm, mult: m });
@@ -485,10 +511,12 @@
       const nm = (keyName ? (r[keyName]||"") : "").trim();
       if (!nm) continue;
 
-      const m = keyMult ? toNum(r[keyMult]) : null;
-      const e = keyEff ? toNum(r[keyEff]) : null;
+      const m0 = keyMult ? toNum(r[keyMult]) : null;
+      const e0 = keyEff ? toNum(r[keyEff]) : null;
+      const m = (m0 === 0 ? null : m0);
+      const e = (e0 === 0 ? null : e0);
 
-      // 倍率が無い行はスキップ（検索用など）
+      // 倍率が無い行はスキップ（空欄は無視）
       if (!Number.isFinite(m) && !Number.isFinite(e)) continue;
 
       list.push({ name: nm, mult: (m ?? 1), multEff: e });
