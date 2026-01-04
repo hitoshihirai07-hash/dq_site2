@@ -118,6 +118,31 @@
           <input id="atk" type="number" inputmode="numeric" placeholder="例：384" />
         </div>
 
+        <div class="dqdc-col-4">
+          <label>武器（倍率あり）</label>
+          <select id="weapon">
+            <option value="">（未選択）</option>
+          </select>
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>武器倍率</label>
+          <input id="weaponMult" type="number" step="0.001" inputmode="decimal" value="1" readonly />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>攻撃回数（1〜8）</label>
+          <input id="hitCount" type="number" min="1" max="8" inputmode="numeric" value="1" />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>ビーストモード</label>
+          <select id="beastMode">
+            <option value="0">なし（1回行動）</option>
+            <option value="1">あり（2回行動）</option>
+          </select>
+        </div>
+
         <div class="dqdc-col-3">
           <label>技（任意）</label>
           <select id="skill">
@@ -210,6 +235,8 @@
               <th>運基準</th>
               <th>モード</th>
               <th>技</th>
+              <th>武器</th>
+              <th class="dqdc-right">回数</th>
               <th class="dqdc-right">倍率</th>
               <th class="dqdc-right">平均</th>
               <th class="dqdc-right">最小〜最大</th>
@@ -317,6 +344,8 @@
 
   let enemyMap = { DQ1: [], DQ2: [] }; // {name, def}
   let skillMap = { DQ1: [], DQ2: [] }; // {name, mult, multEff}
+let skillMap = { DQ1: [], DQ2: [] }; // {name, mult, multEff}
+  let weaponMap = { DQ1: [], DQ2: [] }; // {name, mult}
   let charPages = new Map(); // name -> href
   let lastLuckInfo = null; // {low, high, luck, band}
   let skillEffMode = false; // false=通常, true=特効
@@ -491,6 +520,8 @@ function extractEnemyListFromBossList(doc){
     for (const t of tables){
       const h = headersOf(t);
       if (!h.length) continue;
+      // アイテム/装備表（種別あり）を除外
+      if (h.some(x => String(x||"").includes("種別"))) continue;
       const idxName = h.findIndex(x => x.includes("名前") || x.includes("名称") || x.includes("技"));
       const idxMult = h.findIndex(x => x.includes("倍率"));
       if (idxName < 0 || idxMult < 0) continue;
@@ -510,6 +541,41 @@ function extractEnemyListFromBossList(doc){
     }
     return null;
   }
+
+  function extractWeaponList(doc){
+    // ヘッダに「種別」「名前」「倍率」がある表を探す（並び順は維持）
+    const tables = Array.from(doc.querySelectorAll("table"));
+    for (const t of tables){
+      const h = headersOf(t);
+      if (!h.length) continue;
+      const idxKind = h.findIndex(x => String(x||"").includes("種別"));
+      const idxName = h.findIndex(x => String(x||"").includes("名前") || String(x||"").includes("名称"));
+      const idxMult = h.findIndex(x => String(x||"").includes("倍率"));
+      if (idxKind < 0 || idxName < 0 || idxMult < 0) continue;
+
+      const out = [];
+      for (const tr of rowsOf(t)){
+        const cells = Array.from(tr.children);
+        const kind = (cells[idxKind]?.textContent || "").trim();
+        if (!kind) continue;
+        // 「武器」だけ対象（表記ゆれを吸収）
+        if (!/武器/.test(kind)) continue;
+
+        const name = (cells[idxName]?.textContent || "").trim();
+        if (!name) continue;
+
+        const nums = parseNums(cells[idxMult]?.textContent || "");
+        if (!nums.length) continue;
+        const mult = nums[0];
+        if (!Number.isFinite(mult)) continue;
+
+        out.push({ name, mult });
+      }
+      if (out.length) return out;
+    }
+    return null;
+  }
+
 
   function extractCharacterLinks(doc){
     // dq_character.html からキャラページのリンクを拾う
@@ -591,6 +657,11 @@ function extractEnemyListFromBossList(doc){
     skillMap[game] = list;
   }
 
+  async function loadWeapons(game){
+    const list = await withIframe(SRC.db[game], (doc) => extractWeaponList(doc)) || [];
+    weaponMap[game] = list;
+  }
+
   async function loadCharacterIndex(){
     const list = await withIframe(SRC.characterIndex, (doc) => extractCharacterLinks(doc)) || [];
     // name->href
@@ -640,7 +711,34 @@ function extractEnemyListFromBossList(doc){
     }
   }
 
-  function refreshSkillSelect(){
+  
+  function refreshWeaponSelect(){
+    const game = $("game").value;
+    const sel = $("weapon");
+    const prev = sel.value;
+    clearOptions(sel, true);
+
+    (weaponMap[game] || []).forEach(it => {
+      const op = document.createElement("option");
+      op.value = it.name;
+      op.textContent = `${it.name}（倍率${fmt(it.mult,3)}）`;
+      op.dataset.mult = String(it.mult);
+      sel.appendChild(op);
+    });
+
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    } else {
+      sel.value = "";
+    }
+
+    // 反映
+    const op = sel.options[sel.selectedIndex];
+    const mlt = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+    $("weaponMult").value = String(mlt);
+  }
+
+function refreshSkillSelect(){
     const game = $("game").value;
     const sel = $("skill");
     clearOptions(sel, true);
@@ -800,31 +898,39 @@ function extractEnemyListFromBossList(doc){
     const luckMult = (LUCK_MULT[game]?.[band] ?? 1.0);
 
     const skillMult = safeNumber($("skillMult").value, 1.0) ?? 1.0;
+    const weaponMult = safeNumber($("weaponMult").value, 1.0) ?? 1.0;
+    const manualMult = safeNumber($("manualMult").value, 1.0) ?? 1.0;
 
     const bikilt = $("bikilt").checked ? 2.0 : 1.0;
 
     const tame = $("tame").value;
     const tameMult = (tame === "tame" || tame === "ouen") ? 2.0 : (tame === "super_tame") ? 3.0 : 1.0;
 
+    const hitCount = clampInt(safeNumber($("hitCount").value, 1) ?? 1, 1, 8);
+    const beast = safeNumber($("beastMode").value, 0) ? 2 : 1;
+    const totalHits = hitCount * beast;
+
     const stage = stageOverride !== null ? stageOverride : safeNumber($("defStage").value, 0) ?? 0;
     const defMult = stageMult(stage);
 
-    const totalMult = modeMult * luckMult * skillMult * bikilt * tameMult * defMult;
+    const totalMult = modeMult * luckMult * skillMult * weaponMult * bikilt * tameMult * manualMult * defMult;
 
-    const meanRaw = base * totalMult;
-    const minRaw = meanRaw * RAND_MIN;
-    const maxRaw = meanRaw * RAND_MAX;
+    const meanRaw = base * totalMult * totalHits;
+    const minRaw = base * totalMult * RAND_MIN * totalHits;
+    const maxRaw = base * totalMult * RAND_MAX * totalHits;
 
     return {
       game, mode, A, D,
       enemy: $("enemy").value || "",
       skill: $("skill").value || "",
+      weapon: $("weapon").value || "",
+      hits: totalHits,
       band,
       stage,
       mult: totalMult,
-      mean: floor0(meanRaw),
-      min: floor0(minRaw),
-      max: floor0(maxRaw),
+      mean: Math.max(0, floor0(meanRaw)),
+      min: Math.max(0, floor0(minRaw)),
+      max: Math.max(0, floor0(maxRaw)),
     };
   }
 
@@ -894,6 +1000,8 @@ function extractEnemyListFromBossList(doc){
         row.band,
         row.mode,
         row.skill,
+        row.weapon,
+        String(row.hits || 1),
         fmt(row.mult, 3),
         String(row.mean),
         range,
@@ -908,9 +1016,9 @@ function extractEnemyListFromBossList(doc){
   }
 
   function downloadCsv(){
-    const headers = ["作品","敵","攻撃","防御","運基準","モード","技","倍率合計","平均","最小","最大"];
+    const headers = ["作品","敵","攻撃","防御","運基準","モード","技","武器","回数","倍率合計","平均","最小","最大"];
     const rows = logs.map(r => [
-      r.game, r.enemy, r.A, r.D, r.band, r.mode, r.skill,
+      r.game, r.enemy, r.A, r.D, r.band, r.mode, r.skill, r.weapon, (r.hits||1),
       fmt(r.mult, 10), r.mean, r.min, r.max
     ]);
     const esc = (v) => {
@@ -955,7 +1063,7 @@ function extractEnemyListFromBossList(doc){
       renderResult();
     });
 
-    const ids = ["game","mode","enemy","atk","def","skill","skillMult","bikilt","tame","defStage","stageUnknown","chara","lv","luck","luckBand"];
+    const ids = ["game","mode","enemy","atk","def","skill","skillMult","weapon","weaponMult","hitCount","beastMode","manualMult","bikilt","tame","defStage","stageUnknown","chara","lv","luck","luckBand"];
     ids.forEach(id => {
       $(id).addEventListener("change", async () => {
         if (id === "enemy"){
@@ -1007,6 +1115,13 @@ function extractEnemyListFromBossList(doc){
           else $("skillMult").value = "1";
           updateSkillButtons();
         }
+
+        if (id === "weapon"){
+          const sel = $("weapon");
+          const op = sel.options[sel.selectedIndex];
+          const m = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+          $("weaponMult").value = String(m);
+        }
         if (id === "game"){
           await bootGame($("game").value);
         }
@@ -1050,8 +1165,12 @@ function extractEnemyListFromBossList(doc){
     try{
       await loadSkills(game);
     }catch(e){}
+    try{
+      await loadWeapons(game);
+    }catch(e){}
     refreshEnemySelect();
     refreshSkillSelect();
+    refreshWeaponSelect();
     renderResult();
   }
 
