@@ -442,7 +442,12 @@
     const text = await fetchText(CSV_SRC.boss[game]);
     const { header, rows } = parseCSV(text);
 
-    const keyName = pickKey(header, [/ボス戦名/, /敵.*名/, /ボス.*名/, /敵/, /名前/, /名称/]);
+    let keyName = pickKey(header, [/^敵名$/, /^ボス名$/, /敵.*名/, /ボス.*名/, /^敵$/, /^ボス$/, /名前/, /名称/]);
+    // 「ボス戦名」など戦闘名系を拾ってしまう場合があるので除外
+    if (keyName && /戦/.test(keyName)){
+      const alt = header.find(h => /(敵.*名|ボス.*名|^敵$|^ボス$|名前|名称)/.test(h) && !/戦/.test(h));
+      if (alt) keyName = alt;
+    }
     const keyDef  = pickKey(header, [/守備/, /防御/, /みのまもり/]);
     const keyHP   = pickKey(header, [/^HP$/i, /ＨＰ/, /ヒットポイント/, /最大HP/, /最大ＨＰ/]);
     const keyType = pickKey(header, [/種別/, /区分/, /カテゴリ/, /ユニット/]);
@@ -464,6 +469,13 @@
       const def = keyDef ? toNum(r[keyDef]) : null;
       const hp  = keyHP ? toNum(r[keyHP]) : null;
       const typ = keyType ? (r[keyType]||"").trim() : "";
+
+      // 行動/パターン行を除外（DQ1の行動パターンが敵候補に混ざる対策）
+      if (typ && /(行動|パターン)/.test(typ)) continue;
+      // 防御・HPが無い行は候補にしない（空欄=0扱いを避ける）
+      if (!Number.isFinite(def) && !Number.isFinite(hp)) continue;
+      // 「①～」みたいな行動パターン文字列が名前列に入るケースの保険
+      if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(name)) continue;
 
       // すでに登録済みなら「ボス」行を優先して上書き
       if (!byName.has(name)){
@@ -490,7 +502,7 @@
       const t = (r[keyType]||"").trim();
       if (!/武器/.test(t)) continue;
       const m = toNum(r[keyMult]);
-      if (!Number.isFinite(m) || m === 0) continue;
+      if (!Number.isFinite(m) || m <= 0) continue;
       const nm = (r[keyName]||"").trim();
       if (!nm) continue;
       list.push({ name: nm, mult: m });
@@ -513,8 +525,8 @@
 
       const m0 = keyMult ? toNum(r[keyMult]) : null;
       const e0 = keyEff ? toNum(r[keyEff]) : null;
-      const m = (m0 === 0 ? null : m0);
-      const e = (e0 === 0 ? null : e0);
+      const m = (Number.isFinite(m0) && m0 > 0 ? m0 : null);
+      const e = (Number.isFinite(e0) && e0 > 0 ? e0 : null);
 
       // 倍率が無い行はスキップ（空欄は無視）
       if (!Number.isFinite(m) && !Number.isFinite(e)) continue;
