@@ -59,11 +59,18 @@
             <option value="">すべて</option>
             <option value="道具">道具</option>
             <option value="装備">装備（全部）</option>
+            <option value="装備武器">装備武器</option>
             <option value="装備盾">装備盾</option>
             <option value="装備兜">装備兜</option>
             <option value="装備服">装備服</option>
             <option value="装備装飾品">装備装飾品</option>
           </select>
+        </label>
+        <label>倍率ありのみ
+          <span style="display:flex;align-items:center;gap:6px;flex-direction:row;">
+            <input type="checkbox" id="items-mult-only" />
+            <span style="font-size:12px;color:#9ca3af;">倍率が空欄の行を除外</span>
+          </span>
         </label>
       </div>
       <div class="table-wrap">
@@ -76,8 +83,6 @@
               <th class="nowrap">守備力</th>
               <th class="nowrap">買値</th>
               <th class="nowrap">売値</th>
-              
-              <th class="nowrap">倍率</th>
               <th>効果</th>
               <th>入手方法</th>
               <th>装備可能</th>
@@ -215,10 +220,12 @@
       const searchInput = document.getElementById("items-search");
       const kindSelect = document.getElementById("items-kind");
 
-      function applyFilter() {
+            const multOnly = document.getElementById("items-mult-only");
+function applyFilter() {
         const kw = searchInput.value.trim();
         const kindFilter = kindSelect.value;
-        tbody.innerHTML = "";
+                const multOnlyChecked = multOnly ? multOnly.checked : false;
+tbody.innerHTML = "";
 
         const rowsToShow = [];
 
@@ -229,8 +236,7 @@
           const def     = idx["守備力"] !== undefined ? (row[idx["守備力"]] || "") : "";
           const buyPrice  = idx["買値"]   !== undefined ? (row[idx["買値"]]   || "") : "";
           const sellPrice = idx["売値"]   !== undefined ? (row[idx["売値"]]   || "") : "";
-          
-          const mult    = idx["倍率"] !== undefined ? (row[idx["倍率"]] || "") : "";const effect  = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
+          const effect  = idx["効果"]   !== undefined ? (row[idx["効果"]]   || "") : "";
           const acquire = idx["入手方法"] !== undefined ? (row[idx["入手方法"]] || "") : "";
           const equip   = idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "";
           const note    = idx["備考"]     !== undefined ? (row[idx["備考"]]     || "") : "";
@@ -244,10 +250,16 @@
             }
           }
 
-          const fullText = [kind, name, atk, def, buyPrice, sellPrice, mult, effect, acquire, equip, note].join(" ");
+          // 倍率ありのみ
+          if (multOnlyChecked) {
+            const mval = parseFloat(mult);
+            if (!mult || Number.isNaN(mval) || mval <= 0) continue;
+          }
+
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note].join(" ");
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, mult, effect, acquire, equip, note });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -298,11 +310,6 @@
           tdSell.textContent = item.sellPrice;
           tr.appendChild(tdSell);
 
-          const tdMult = document.createElement("td");
-          tdMult.className = "nowrap";
-          tdMult.textContent = item.mult;
-          tr.appendChild(tdMult);
-
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(item.effect);
           tr.appendChild(tdEffect);
@@ -325,7 +332,8 @@
 
       searchInput.addEventListener("input", applyFilter);
       kindSelect.addEventListener("change", applyFilter);
-      applyFilter();
+            if (multOnly) multOnly.addEventListener("change", applyFilter);
+applyFilter();
     }
 
     async function renderSpells() {
