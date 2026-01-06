@@ -66,9 +66,7 @@
             <option value="装備装飾品">装備装飾品</option>
           </select>
         </label>
-        <label class="inline">
-          <input type="checkbox" id="items-mult-only" /> 倍率ありのみ
-        </label>
+        <label class="inline"><input type="checkbox" id="items-mult-only" /> 倍率ありのみ</label>
       </div>
       <div class="table-wrap">
         <table>
@@ -85,6 +83,7 @@
               <th>入手方法</th>
               <th>装備可能</th>
               <th>備考</th>
+        
             </tr>
           </thead>
           <tbody id="items-body"></tbody>
@@ -106,9 +105,7 @@
             <option value="超絶技">超絶技</option>
           </select>
         </label>
-        <label class="inline">
-          <input type="checkbox" id="items-mult-only" /> 倍率ありのみ
-        </label>
+        <label class="inline"><input type="checkbox" id="items-mult-only" /> 倍率ありのみ</label>
       </div>
       <div class="table-wrap">
         <table>
@@ -143,6 +140,7 @@
         <label>キーワード検索
           <input type="search" id="monsters-search" placeholder="名前・出現エリア・ドロップなど" />
         </label>
+        <label class="inline"><input type="checkbox" id="items-mult-only" /> 倍率ありのみ</label>
       </div>
       <div class="table-wrap">
         <table>
@@ -251,15 +249,15 @@
             }
           }
 
-          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note].join(" ");
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note, multRaw].join(" ");
           if (multOnly) {
-            const m = parseFloat(String(multRaw).trim());
-            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
+            const mv = parseFloat(String(multRaw).trim());
+            if (!isFinite(mv) || mv <= 0) continue;
           }
 
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, equip, note });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, multRaw, effect, acquire, equip, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -310,6 +308,11 @@
           tdSell.textContent = item.sellPrice;
           tr.appendChild(tdSell);
 
+          const tdMult = document.createElement("td");
+          tdMult.className = "nowrap";
+          tdMult.textContent = item.multRaw;
+          tr.appendChild(tdMult);
+
           const tdEffect = document.createElement("td");
           tdEffect.innerHTML = nl2br(item.effect);
           tr.appendChild(tdEffect);
@@ -346,7 +349,6 @@
       function applyFilter() {
         const kw = searchInput.value.trim();
         const kindFilter = kindSelect.value;
-        const multOnly = multOnlyCheckbox ? multOnlyCheckbox.checked : false;
         tbody.innerHTML = "";
 
         for (const row of data) {
@@ -409,11 +411,6 @@
             scroll,
             note
           ].join(" ");
-          if (multOnly) {
-            const m = parseFloat(String(multRaw).trim());
-            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
-          }
-
           if (!textMatch(fullText, kw)) continue;
 
           const tr = document.createElement("tr");
@@ -474,7 +471,6 @@
 
       searchInput.addEventListener("input", applyFilter);
       kindSelect.addEventListener("change", applyFilter);
-      if (multOnlyCheckbox) multOnlyCheckbox.addEventListener("change", applyFilter);
       applyFilter();
     }
 async function renderMonsters() {
@@ -496,11 +492,6 @@ async function renderMonsters() {
           const drop = idx["ドロップ"] !== undefined ? (row[idx["ドロップ"]] || "") : "";
 
           const fullText = [name, area, hp, exp, gold, drop].join(" ");
-          if (multOnly) {
-            const m = parseFloat(String(multRaw).trim());
-            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
-          }
-
           if (!textMatch(fullText, kw)) continue;
 
           const tr = document.createElement("tr");
