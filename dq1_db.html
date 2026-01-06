@@ -66,11 +66,8 @@
             <option value="装備装飾品">装備装飾品</option>
           </select>
         </label>
-        <label>倍率ありのみ
-          <span style="display:flex;align-items:center;gap:6px;flex-direction:row;">
-            <input type="checkbox" id="items-mult-only" />
-            <span style="font-size:12px;color:#9ca3af;">倍率が空欄の行を除外</span>
-          </span>
+        <label class="inline">
+          <input type="checkbox" id="items-mult-only" /> 倍率ありのみ
         </label>
       </div>
       <div class="table-wrap">
@@ -83,8 +80,10 @@
               <th class="nowrap">守備力</th>
               <th class="nowrap">買値</th>
               <th class="nowrap">売値</th>
+              <th class="nowrap">倍率</th>
               <th>効果</th>
               <th>入手方法</th>
+              <th>装備可能</th>
               <th>備考</th>
             </tr>
           </thead>
@@ -105,6 +104,9 @@
             <option value="特技">特技</option>
             <option value="超絶技">超絶技</option>
           </select>
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="items-mult-only" /> 倍率ありのみ
         </label>
       </div>
       <div class="table-wrap">
@@ -217,13 +219,13 @@
       const tbody = document.getElementById("items-body");
       const searchInput = document.getElementById("items-search");
       const kindSelect = document.getElementById("items-kind");
+      const multOnlyCheckbox = document.getElementById("items-mult-only");
 
-            const multOnly = document.getElementById("items-mult-only");
-function applyFilter() {
+      function applyFilter() {
         const kw = searchInput.value.trim();
         const kindFilter = kindSelect.value;
-                const multOnlyChecked = multOnly ? multOnly.checked : false;
-tbody.innerHTML = "";
+        const multOnly = multOnlyCheckbox ? multOnlyCheckbox.checked : false;
+        tbody.innerHTML = "";
 
         const rowsToShow = [];
 
@@ -234,7 +236,9 @@ tbody.innerHTML = "";
           const def     = row[idx["守備力"]] || "";
           const buyPrice  = row[idx["買値"]] || "";
           const sellPrice = row[idx["売値"]] || "";
-          const effect  = row[idx["効果"]] || "";
+                    const multRaw = (idx["倍率"] !== undefined ? (row[idx["倍率"]] || "") : "");
+          const equip = (idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "");
+const effect  = row[idx["効果"]] || "";
           const acquire = row[idx["入手方法"]] || "";
           const note    = row[idx["備考"]] || "";
 
@@ -246,10 +250,15 @@ tbody.innerHTML = "";
             }
           }
 
-          const fullText = [kind, name, atk, def, buyPrice, sellPrice, effect, acquire, note].join(" ");
+          const fullText = [kind, name, atk, def, buyPrice, sellPrice, multRaw, effect, acquire, equip, note].join(" ");
+          if (multOnly) {
+            const m = parseFloat(String(multRaw).trim());
+            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
+          }
+
           if (!textMatch(fullText, kw)) continue;
 
-          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, effect, acquire, note });
+          rowsToShow.push({ kind, name, atk, def, buyPrice, sellPrice, multRaw, effect, acquire, equip, note });
         }
 
         rowsToShow.sort((a, b) => {
@@ -308,6 +317,10 @@ tbody.innerHTML = "";
           tdAcquire.innerHTML = nl2br(item.acquire);
           tr.appendChild(tdAcquire);
 
+          const tdEquip = document.createElement("td");
+          tdEquip.innerHTML = nl2br(item.equip);
+          tr.appendChild(tdEquip);
+
           const tdNote = document.createElement("td");
           tdNote.innerHTML = nl2br(item.note);
           tr.appendChild(tdNote);
@@ -318,8 +331,8 @@ tbody.innerHTML = "";
 
       searchInput.addEventListener("input", applyFilter);
       kindSelect.addEventListener("change", applyFilter);
-            if (multOnly) multOnly.addEventListener("change", applyFilter);
-applyFilter();
+      if (multOnlyCheckbox) multOnlyCheckbox.addEventListener("change", applyFilter);
+      applyFilter();
     }
 
     async function renderSpells() {
@@ -332,6 +345,7 @@ applyFilter();
       function applyFilter() {
         const kw = searchInput.value.trim();
         const kindFilter = kindSelect.value;
+        const multOnly = multOnlyCheckbox ? multOnlyCheckbox.checked : false;
         tbody.innerHTML = "";
 
         for (const row of data) {
@@ -392,6 +406,11 @@ applyFilter();
             scroll,
             note
           ].join(" ");
+          if (multOnly) {
+            const m = parseFloat(String(multRaw).trim());
+            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
+          }
+
           if (!textMatch(fullText, kw)) continue;
 
           const tr = document.createElement("tr");
@@ -452,6 +471,7 @@ applyFilter();
 
       searchInput.addEventListener("input", applyFilter);
       kindSelect.addEventListener("change", applyFilter);
+      if (multOnlyCheckbox) multOnlyCheckbox.addEventListener("change", applyFilter);
       applyFilter();
     }
 async function renderMonsters() {
@@ -473,6 +493,11 @@ async function renderMonsters() {
           const drop = row[idx["ドロップ"]] || "";
 
           const fullText = [name, area, hp, exp, gold, drop].join(" ");
+          if (multOnly) {
+            const m = parseFloat(String(multRaw).trim());
+            if (!String(multRaw).trim() || !isFinite(m) || m <= 0) continue;
+          }
+
           if (!textMatch(fullText, kw)) continue;
 
           const tr = document.createElement("tr");
