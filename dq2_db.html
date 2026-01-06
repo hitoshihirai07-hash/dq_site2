@@ -239,6 +239,7 @@
           const acquire = idx["入手方法"] !== undefined ? (row[idx["入手方法"]] || "") : "";
           const equip   = idx["装備可能"] !== undefined ? (row[idx["装備可能"]] || "") : "";
           const note    = idx["備考"]     !== undefined ? (row[idx["備考"]]     || "") : "";
+          const multRaw = (idx["倍率"] !== undefined ? (row[idx["倍率"]] || "") : "");
 
           // 種別フィルタ
           if (kindFilter) {
