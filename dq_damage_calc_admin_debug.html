@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DQI・Ⅱダメージ計算</title>
+  <link rel="stylesheet" href="theme.css" />
+  <style>
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      margin:0;
+    }
+    .dqdc-wrap{max-width:1200px;margin:0 auto;padding:16px;}
+    .dqdc-layout{display:flex;gap:14px;align-items:flex-start;}
+    .dqdc-panel-left{flex:0 0 560px;max-width:560px;min-width:320px;}
+    .dqdc-panel-right{flex:1 1 auto;min-width:320px;}
+    @media (max-width: 980px){
+      .dqdc-layout{flex-direction:column;}
+      .dqdc-panel-left{flex:1 1 auto;max-width:none;}
+      .dqdc-panel-right{min-width:0;}
+    }
+
+    .dqdc-card{
+      border-radius:14px;
+      padding:14px;
+      background: rgba(255,255,255,.50);
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      backdrop-filter: blur(4px);
+    }
+    h1{margin:0 0 12px 0;font-size:20px;}
+    h2{margin:0 0 10px 0;font-size:16px;}
+
+    .dqdc-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:start;}
+    .dqdc-col-12{grid-column:span 12;}
+    .dqdc-col-6{grid-column:span 6;}
+    .dqdc-col-4{grid-column:span 4;}
+    .dqdc-col-3{grid-column:span 3;}
+    .dqdc-col-2{grid-column:span 2;}
+    .dqdc-col-1{grid-column:span 1;}
+    @media (max-width: 560px){
+      .dqdc-col-6,.dqdc-col-4,.dqdc-col-3,.dqdc-col-2{grid-column:span 12;}
+    }
+
+    label{display:block;font-size:12px;opacity:.85;margin:0 0 4px 0;}
+    input, select{
+      width:100%;
+      min-width:0;
+      box-sizing:border-box;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.14);
+      background: rgba(255,255,255,.90);
+      outline:none;
+    }
+    input:focus, select:focus{border-color: rgba(0,0,0,.30);}
+
+    .dqdc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+    button{
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.18);
+      background: rgba(255,255,255,.85);cursor:pointer;
+    }
+    button:hover{filter:brightness(0.98);}
+    button:disabled{opacity:.55;cursor:not-allowed;}
+    .btn-mini{padding:7px 10px;border-radius:999px;font-size:12px;}
+    .dqdc-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .dqdc-btnrow{margin-top:6px;row-gap:6px;}
+    .dqdc-toplink{display:inline-block;margin:0 0 10px 0;font-size:13px;opacity:.85;text-decoration:none;}
+    .dqdc-toplink:hover{text-decoration:underline;}
+
+    .dqdc-muted{opacity:.75;font-size:12px;}
+    .dqdc-right{text-align:right;}
+
+    .dqdc-kv{display:grid;grid-template-columns:1fr;gap:8px;}
+    .dqdc-result-box{border-radius:12px;padding:12px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.10);}
+    .dqdc-big{font-size:20px;font-weight:700;}
+    .dqdc-range{font-size:13px;opacity:.85;}
+    .dqdc-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .dqdc-table th,.dqdc-table td{border-bottom:1px solid rgba(0,0,0,.10);padding:6px 6px;vertical-align:top;}
+    .dqdc-table th{position:sticky;top:0;background:rgba(255,255,255,.92);z-index:1;}
+    .dqdc-table-wrap{max-height:340px;overflow:auto;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.55);}
+  </style>
+</head>
+<body>
+  <main class="dqdc-wrap page-main">
+    <h1>DQI・Ⅱダメージ計算</h1>
+<div class="dqdc-layout">
+    <section class="dqdc-card dqdc-panel-left">
+      <h2 style="margin:0 0 10px 0;font-size:16px;">入力</h2>
+
+      <div class="dqdc-grid">
+        <div class="dqdc-col-3">
+          <label>作品</label>
+          <select id="game">
+            <option value="DQ1">DQ1</option>
+            <option value="DQ2">DQ2</option>
+          </select>
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>ゲームモード</label>
+          <select id="mode">
+            <option value="バッチリぼうけん">バッチリぼうけん</option>
+            <option value="楽ちんプレイ">楽ちんプレイ</option>
+          </select>
+          
+
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>敵（任意）</label>
+          <select id="enemy">
+            <option value="">（未選択）</option>
+          </select>
+          
+
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>敵の防御</label>
+          <input id="def" type="number" inputmode="numeric" placeholder="例：499" />
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>敵のHP</label>
+          <input id="hp" type="number" inputmode="numeric" placeholder="例：1000" />
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>キャラ（任意）</label>
+          <select id="chara">
+            <option value="">（未選択）</option>
+            <option value="DQ1主人公">DQ1主人公</option>
+            <option value="DQ2ローレシア王子">DQ2ローレシア王子</option>
+            <option value="DQ2サマルトリア王子">DQ2サマルトリア王子</option>
+            <option value="DQ2ムーンブルク王女">DQ2ムーンブルク王女</option>
+            <option value="DQ2サマルトリア王女">DQ2サマルトリア王女</option>
+          </select>
+          
+
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>LV</label>
+          <input id="lv" type="number" inputmode="numeric" placeholder="例：40" />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>運の良さ</label>
+          <input id="luck" type="number" inputmode="numeric" placeholder="例：55" />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>運基準</label>
+          <select id="luckBand">
+            <option value="auto">自動</option>
+            <option value="最小">最小</option>
+            <option value="中">中</option>
+            <option value="最大">最大</option>
+          </select>
+          <div id="luckBaseInfo" style="font-size:12px;opacity:.85;margin-top:6px;line-height:1.3;"></div>
+          
+
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>攻撃</label>
+          <input id="atk" type="number" inputmode="numeric" placeholder="例：384" />
+        </div>
+
+        <div class="dqdc-col-4">
+          <label>武器（倍率あり）</label>
+          <select id="weapon">
+            <option value="">（未選択）</option>
+          </select>
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>武器倍率</label>
+          <input id="weaponMult" type="number" step="0.001" inputmode="decimal" value="1" readonly />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>攻撃回数（1〜8）</label>
+          <input id="hitCount" type="number" min="1" max="8" inputmode="numeric" value="1" />
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>ビーストモード</label>
+          <select id="beastMode">
+            <option value="0">なし（1回行動）</option>
+            <option value="1">あり（2回行動）</option>
+          </select>
+        </div>
+
+        <div class="dqdc-col-3">
+          <label>技（任意）</label>
+          <select id="skill">
+            <option value="" data-mult="1">通常攻撃（倍率1.0）</option>
+          </select>
+          
+
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>技倍率</label>
+          
+          <input id="skillMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.6" value="1" />
+          <div class="dqdc-inline dqdc-btnrow">
+            <button type="button" class="btn-mini" id="setSkillNormal">通常(1.1)</button>
+            <button type="button" class="btn-mini" id="setSkillEffective">特効(1.6)</button>
+          </div>
+
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>バイキルト</label>
+          <label style="display:flex;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(0,0,0,.2);">
+            <input id="bikilt" type="checkbox" />
+            有効（2倍）
+          </label>
+        </div>
+
+        <div class="dqdc-col-4">
+          <label>ちからため / 超ちからため / おうえん</label>
+          <select id="tame">
+            <option value="none">なし</option>
+            <option value="tame">ちからため（2倍）</option>
+            <option value="super_tame">超ちからため（3倍）</option>
+            <option value="ouen">おうえん（2倍）</option>
+          </select>
+          
+
+        </div>
+
+        <div class="dqdc-col-2">
+          <label>手動倍率（任意）</label>
+          <input id="manualMult" type="number" step="0.001" inputmode="decimal" placeholder="例：1.2" value="1" />
+        </div>
+
+        <div class="dqdc-col-4">
+          <label>ルカニ/スカラ段階（-6〜+6）</label>
+          <select id="defStage"></select>
+          
+
+        </div>
+
+        <div class="dqdc-col-2" style="display:flex;align-items:end;gap:10px;">
+          <label style="margin:0;">
+            <input id="stageUnknown" type="checkbox" />
+            段階不明（1/3/6表示）
+          </label>
+        </div>
+      </div>
+
+      <div class="dqdc-actions" style="margin-top:12px;">
+        <button id="btnCalc">計算してログに追加</button>
+        <button id="btnClear" type="button">ログ全消し</button>
+</div>
+    </section>
+
+    <div class="dqdc-panel-right">
+      <section class="dqdc-card">
+      <h2 style="margin:0 0 10px 0;font-size:16px;">結果</h2>
+
+      <div id="resultMain" class="dqdc-out">-</div>
+      <div class="dqdc-muted" id="resultSub">-</div>
+
+      <div id="resultBands" style="margin-top:10px;"></div>
+    </section>
+
+      <section class="dqdc-card">
+      <h2 style="margin:0 0 10px 0;font-size:16px;">ログ一覧</h2>
+      
+
+      <div style="overflow:auto;margin-top:10px;">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>作品</th>
+              <th>敵</th>
+              <th class="dqdc-right">攻撃</th>
+              <th class="dqdc-right">防御</th>
+              <th>運基準</th>
+              <th>モード</th>
+              <th>技</th>
+              <th>武器</th>
+              <th class="dqdc-right">回数</th>
+              <th class="dqdc-right">倍率</th>
+              <th class="dqdc-right">平均</th>
+              <th class="dqdc-right">最小〜最大</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  // ====== 固定データ（公開ページでは表示しない） ======
+  const COEF = {
+    DQ1: { a: 0.749991892417, b: 0.264610864087, c: 0.000498335818083 }, // a*A - b*D - c*A^2
+    DQ2: { a: 0.971654263608598, b: 0.387760162755906, c: 0.00113383813266851, d: 0.000557355812240368 }, // a*A - b*D - c*A*D + d*D^2
+  };
+
+  const LUCK_MULT = {
+    DQ1: { "最小": 0.753404, "中": 0.856676, "最大": 1.0 },
+    DQ2: { "最小": 0.660913083635202, "中": 0.83753922756278, "最大": 1.0 },
+  };
+
+  const MODE_MULT = {
+    "バッチリぼうけん": 1.0,
+    "楽ちんプレイ": 1.2,
+  };
+
+  // 乱数レンジ（参考表示用）
+  const RAND_MIN = 0.90;
+  const RAND_MAX = 1.10;
+
+  // 防御段階倍率（防御ダウンは +倍率 / 防御アップは 1/倍率）
+  // 既知点：1,3,6（あなたのログ基準）。間は線形補間。
+  const DEF_DOWN_POINTS = [
+    { s: 0, m: 1.0 },
+    { s: 1, m: 1.270721206 },     // ワイルドホッグ
+    { s: 3, m: 1.433799785 },     // ワイルドホッグ
+    { s: 6, m: 1.804518211 },     // シドー
+  ];
+
+  function clampInt(n, lo, hi){
+    n = Math.trunc(n);
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  function safeNumber(v, fallback=null){
+    if (v === null || v === undefined) return fallback;
+    if (typeof v === "string" && v.trim() === "") return fallback; // 空欄は0扱いにしない
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function floor0(x){
+    return Math.floor(x);
+  }
+
+  function fmt(x, d=3){
+    if (!Number.isFinite(x)) return "";
+    return Number(x).toFixed(d).replace(/\.?0+$/,"");
+  }
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function stageMult(stage){
+    stage = clampInt(stage, -6, 6);
+    if (stage === 0) return 1.0;
+
+    const down = Math.abs(stage);
+    // find segment
+    let left = DEF_DOWN_POINTS[0], right = DEF_DOWN_POINTS[DEF_DOWN_POINTS.length-1];
+    for (let i=0;i<DEF_DOWN_POINTS.length-1;i++){
+      const p = DEF_DOWN_POINTS[i], q = DEF_DOWN_POINTS[i+1];
+      if (down >= p.s && down <= q.s){ left = p; right = q; break; }
+    }
+    let m;
+    if (right.s === left.s) m = left.m;
+    else m = lerp(left.m, right.m, (down - left.s) / (right.s - left.s));
+
+    // stage < 0 => 防御ダウン（ダメ増）
+    // stage > 0 => 防御アップ（ダメ減）= 逆数
+    return stage < 0 ? m : (1.0 / m);
+  }
+
+  function baseDamage(game, A, D){
+    if (game === "DQ1"){
+      const {a,b,c} = COEF.DQ1;
+      return a*A - b*D - c*(A*A);
+    }
+    const {a,b,c,d} = COEF.DQ2;
+    return a*A - b*D - c*(A*D) + d*(D*D);
+  }
+
+  // ====== 外部データ（同一サイト内ページから読み取り） ======
+  const SRC = {
+    bossList: { DQ1: "dq1_boss_list.html", DQ2: "dq2_boss_list.html" },
+    db: { DQ1: "dq1_db.html", DQ2: "dq2_db.html" },
+    characterIndex: "dq_character.html",
+  };
+
+  let enemyMap = { DQ1: [], DQ2: [] }; // {name, def}
+  let skillMap = { DQ1: [], DQ2: [] }; // {name, mult, multEff}
+  let weaponMap = { DQ1: [], DQ2: [] }; // {name, mult}
+  let charPages = new Map(); // name -> href
+  let lastLuckInfo = null; // {low, high, luck, band}
+  let skillEffMode = false; // false=通常, true=特効
+
+  
+  // ====== CSV helpers (no iframe) ======
+  async function fetchText(url){
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch failed: ${url} (${res.status})`);
+    return await res.text();
+  }
+
+  function parseCSVLine(line){
+    const out = [];
+    let cur = "";
+    let inQ = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (inQ){
+        if (ch === '"'){
+          if (line[i+1] === '"'){ cur += '"'; i++; }
+          else { inQ = false; }
+        } else {
+          cur += ch;
+        }
+      } else {
+        if (ch === '"'){ inQ = true; }
+        else if (ch === ','){ out.push(cur); cur=""; }
+        else { cur += ch; }
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseCSV(text){
+    const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+    const nonEmpty = lines.filter(l => l !== "");
+    if (nonEmpty.length === 0) return { header: [], rows: [] };
+    const header = parseCSVLine(nonEmpty[0]).map(h => (h||"").trim());
+    const rows = [];
+    for (let i=1;i<nonEmpty.length;i++){
+      const cols = parseCSVLine(nonEmpty[i]);
+      if (cols.every(v => (v||"").trim()==="")) continue;
+      const obj = {};
+      header.forEach((h, idx) => obj[h] = (cols[idx] ?? "").trim());
+      rows.push(obj);
+    }
+    return { header, rows };
+  }
+
+  function pickKey(header, patterns){
+    for (const pat of patterns){
+      const re = (pat instanceof RegExp) ? pat : new RegExp(pat, "i");
+      const hit = header.find(h => re.test(h));
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  function toNum(v){
+    const s = String(v ?? "").replace(/,/g,"").trim();
+    if (s === "") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function extractSkillMultFromText(txt){
+    const s = String(txt ?? "");
+    if (!s.trim()) return { normal: null, eff: null, nums: [] };
+
+    // 例: "通常1.1倍 / 特効1.6倍" みたいな表記
+    const mN = s.match(/通常[^0-9]*([0-9]+(?:\.[0-9]+)?)/);
+    const mE = s.match(/特効[^0-9]*([0-9]+(?:\.[0-9]+)?)/);
+
+    let normal = mN ? Number(mN[1]) : null;
+    let eff    = mE ? Number(mE[1]) : null;
+
+    const nums = [];
+    for (const m of s.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*倍/g)){
+      const n = Number(m[1]);
+      if (Number.isFinite(n) && n > 0 && n <= 20) nums.push(n);
+    }
+    // uniq
+    const uniq = [];
+    for (const n of nums){ if (!uniq.some(x => Math.abs(x - n) < 1e-9)) uniq.push(n); }
+
+    // 補完（通常/特効が取れなかった時）
+    if (normal === null && eff === null){
+      if (uniq.length >= 2){
+        normal = uniq[0];
+        eff = uniq[1];
+      } else if (uniq.length === 1){
+        normal = uniq[0];
+      }
+    } else if (normal !== null && eff === null){
+      const other = uniq.find(n => Math.abs(n - normal) > 1e-9);
+      if (other !== undefined) eff = other;
+    } else if (eff !== null && normal === null){
+      const other = uniq.find(n => Math.abs(n - eff) > 1e-9);
+      if (other !== undefined) normal = other;
+    }
+
+    return { normal, eff, nums: uniq };
+  }
+
+  function rowIsForGame(cell, game){
+    const s = String(cell ?? "").replace(/\s/g, "");
+    if (!s) return true;
+
+    // ざっくり正規化（全角DQ・ローマ数字）
+    let norm = s.replace(/ＤＱ/g, "DQ");
+    norm = norm.replace(/Ⅰ/g, "I").replace(/Ⅱ/g, "II");
+
+    const is1 = /DQ1|DQI|\bI\b|\b1\b/.test(norm);
+    const is2 = /DQ2|DQII|\bII\b|\b2\b/.test(norm);
+
+    if (game === "DQ1") return is1 && !is2;
+    if (game === "DQ2") return is2 && !is1;
+    return true;
+  }
+
+
+  // ====== Data sources ======
+  const CSV_SRC = {
+    boss: { DQ1: "dq1_boss_multiunit.csv", DQ2: "dq2_boss_multiunit.csv" },
+    items: { DQ1: "data/dq1_items.csv", DQ2: "data/dq2_items.csv" },
+    spells:{ DQ1: "data/dq1_spells.csv", DQ2: "data/dq2_spells.csv" },
+    ability: "dq_data_ability.csv",
+  };
+
+  // ====== Loaders ======
+  async function loadEnemies(game){
+    const text = await fetchText(CSV_SRC.boss[game]);
+    const { header, rows } = parseCSV(text);
+
+    let keyName = pickKey(header, [/^敵名$/, /^ボス名$/, /敵.*名/, /ボス.*名/, /^敵$/, /^ボス$/, /名前/, /名称/]);
+    // 「ボス戦名」など戦闘名系を拾ってしまう場合があるので除外
+    if (keyName && /戦/.test(keyName)){
+      const alt = header.find(h => /(敵.*名|ボス.*名|^敵$|^ボス$|名前|名称)/.test(h) && !/戦/.test(h));
+      if (alt) keyName = alt;
+    }
+    const keyDef  = pickKey(header, [/守備/, /防御/, /みのまもり/]);
+    const keyHP   = pickKey(header, [/^HP$/i, /ＨＰ/, /ヒットポイント/, /最大HP/, /最大ＨＰ/]);
+    const keyType = pickKey(header, [/種別/, /区分/, /カテゴリ/, /ユニット/]);
+    const keyGame = pickKey(header, [/^作品$/, /ゲーム/, /シリーズ/]);
+
+    const byName = new Map();
+    const order = [];
+
+    for (const r of rows){
+      // 作品列がある場合はここでフィルタ（DQ1/DQ2混在CSV対策）
+      if (keyGame){
+        const gcell = (r[keyGame] ?? "");
+        if (!rowIsForGame(gcell, game)) continue;
+      }
+
+      const name = (keyName ? r[keyName] : "")?.trim();
+      if (!name) continue;
+
+      const def = keyDef ? toNum(r[keyDef]) : null;
+      const hp  = keyHP ? toNum(r[keyHP]) : null;
+      const typ = keyType ? (r[keyType]||"").trim() : "";
+
+      // 行動/パターン行を除外（DQ1の行動パターンが敵候補に混ざる対策）
+      if (typ && /(行動|パターン)/.test(typ)) continue;
+      // 防御・HPが無い行は候補にしない（空欄=0扱いを避ける）
+      if (!Number.isFinite(def) && !Number.isFinite(hp)) continue;
+      // 「①～」みたいな行動パターン文字列が名前列に入るケースの保険
+      if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(name)) continue;
+
+      // すでに登録済みなら「ボス」行を優先して上書き
+      if (!byName.has(name)){
+        byName.set(name, { name, def, hp });
+        order.push(name);
+      } else if (typ && /ボス/.test(typ)){
+        byName.set(name, { name, def, hp });
+      }
+    }
+
+    enemyMap[game] = order.map(n => byName.get(n));
+  }
+
+  async function loadWeapons(game){
+    const text = await fetchText(CSV_SRC.items[game]);
+    const { header, rows } = parseCSV(text);
+
+    const keyType = pickKey(header, [/^種別$/, /カテゴリ/]) || "種別";
+    const keyName = pickKey(header, [/^名前$/, /名称/]) || "名前";
+    const keyMult = pickKey(header, [/倍率/]) || "倍率";
+
+    const list = [];
+    for (const r of rows){
+      const t = (r[keyType]||"").trim();
+      if (!/武器/.test(t)) continue;
+      const m = toNum(r[keyMult]);
+      if (!Number.isFinite(m) || m <= 0) continue;
+      const nm = (r[keyName]||"").trim();
+      if (!nm) continue;
+      list.push({ name: nm, mult: m });
+    }
+    weaponMap[game] = list;
+  }
+
+    async function loadSkills(game){
+    const text = await fetchText(CSV_SRC.spells[game]);
+    const { header, rows } = parseCSV(text);
+
+    const keyName = pickKey(header, [/^名前$/, /名称/, /呪文/, /特技/, /技/]);
+    const keyMult = pickKey(header, [/^倍率$/, /通常.*倍率/, /倍率.*通常/])
+      || header.find(h => /倍率/.test(h) && !/特効|弱点/.test(h));
+    const keyEff  = pickKey(header, [/特効.*倍率/, /弱点.*倍率/, /特効倍率/, /弱点倍率/, /倍率.*特効/, /倍率.*弱点/])
+      || header.find(h => /倍率/.test(h) && /特効|弱点/.test(h));
+    const keyEffect = pickKey(header, [/効果/, /説明/]);
+    const keyNote = pickKey(header, [/備考/, /注/, /メモ/]);
+
+    const list = [];
+    for (const r of rows){
+      const nm = (keyName ? (r[keyName]||"") : "").trim();
+      if (!nm) continue;
+
+      // 数値列（倍率/特効倍率）
+      let mult = keyMult ? toNum(r[keyMult]) : null;
+      let eff  = keyEff  ? toNum(r[keyEff])  : null;
+
+      mult = (Number.isFinite(mult) && mult > 0 ? mult : null);
+      eff  = (Number.isFinite(eff)  && eff  > 0 ? eff  : null);
+
+      // 効果/備考から拾える場合がある（例: "通常1.1倍 特効1.6倍" / "特効3.5倍"）
+      const hintText = [keyEffect ? (r[keyEffect]||"") : "", keyNote ? (r[keyNote]||"") : ""].join(" / ");
+      const hinted = extractSkillMultFromText(hintText);
+
+      if (mult === null && Number.isFinite(hinted.normal)) mult = hinted.normal;
+      if (eff  === null && Number.isFinite(hinted.eff))    eff  = hinted.eff;
+
+      // 片方しか取れないなら埋める
+      if (mult === null && eff !== null) mult = eff;
+      if (eff  === null && mult !== null){
+        // 2つ以上候補があるなら、multと違う方を特効として採用
+        const other = (hinted.nums || []).find(n => Number.isFinite(n) && Math.abs(n - mult) > 1e-9);
+        eff = (other !== undefined) ? other : mult;
+      }
+
+      // 倍率が無い行はスキップ（空欄は無視）
+      if (!Number.isFinite(mult) && !Number.isFinite(eff)) continue;
+
+      // 特効が無い場合でも「通常/特効」を両方表示したいので同値で保持
+      if (!Number.isFinite(eff)) eff = mult;
+
+      list.push({ name: nm, mult, multEff: eff });
+    }
+    skillMap[game] = list;
+  }
+
+  // 運基準・運下限・運上限（＋運のよさ）を、dq_data_ability.csv から読む
+  const abilityIndex = new Map(); // key: char|lv -> {luck, base, low, high}
+
+  async function loadAbility(){
+    const text = await fetchText(CSV_SRC.ability);
+    const { header, rows } = parseCSV(text);
+
+    const keyChar = pickKey(header, [/キャラ/, /キャラクタ/, /キャラ名/, /^名前$/]);
+    const keyLv   = pickKey(header, [/^Lv$/i, /レベル/]);
+    const keyLuck = pickKey(header, [/うんのよさ/, /運のよさ/, /運の良さ/, /運$/]);
+    const keyBase = pickKey(header, [/運基準/]);
+    const keyLow  = pickKey(header, [/運下限/]);
+    const keyHigh = pickKey(header, [/運上限/]);
+
+    abilityIndex.clear();
+    for (const r of rows){
+      const ch = (keyChar ? (r[keyChar]||"") : "").trim();
+      const lv = keyLv ? toNum(r[keyLv]) : null;
+      if (!ch || lv === null) continue;
+      const info = {
+        luck: keyLuck ? toNum(r[keyLuck]) : null,
+        base: keyBase ? toNum(r[keyBase]) : null,
+        low:  keyLow  ? toNum(r[keyLow])  : null,
+        high: keyHigh ? toNum(r[keyHigh]) : null,
+      };
+      abilityIndex.set(`${ch}|${lv}`, info);
+    }
+  }
+
+  // 互換のため残す（旧設計の名残）
+  async function loadCharacterIndex(){ /* no-op */ }
+function clearOptions(sel, keepEmpty){
+    const keep = keepEmpty ? 1 : 0;
+    while (sel.options.length > keep) sel.remove(keep);
+  }
+  function initDefStageOptions(){
+    const sel = $("defStage");
+    sel.innerHTML = "";
+    for (let s = -6; s <= 6; s++){
+      const op = document.createElement("option");
+      op.value = String(s);
+      if (s === 0) op.textContent = "なし（0）";
+      else if (s < 0) op.textContent = `防御↓${Math.abs(s)}`;
+      else op.textContent = `防御↑${s}`;
+      sel.appendChild(op);
+    }
+    sel.value = "0";
+  }
+
+
+
+  function refreshEnemySelect(){
+    const game = $("game").value;
+    const sel = $("enemy");
+    const prev = sel.value;
+    clearOptions(sel, true);
+
+    (enemyMap[game] || []).forEach(it => {
+      const op = document.createElement("option");
+      op.value = it.name;
+      op.textContent = it.name;
+      if (it.href) op.dataset.href = it.href;
+      if (Number.isFinite(it.def)) op.dataset.def = String(it.def);
+      if (Number.isFinite(it.hp)) op.dataset.hp = String(it.hp);
+      sel.appendChild(op);
+    });
+
+    // 可能なら選択維持
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    }
+  }
+
+  
+  function refreshWeaponSelect(){
+    const game = $("game").value;
+    const sel = $("weapon");
+    const prev = sel.value;
+    clearOptions(sel, true);
+
+    (weaponMap[game] || []).forEach(it => {
+      const op = document.createElement("option");
+      op.value = it.name;
+      op.textContent = `${it.name}（倍率${fmt(it.mult,3)}）`;
+      op.dataset.mult = String(it.mult);
+      sel.appendChild(op);
+    });
+
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    } else {
+      sel.value = "";
+    }
+
+    // 反映
+    const op = sel.options[sel.selectedIndex];
+    const mlt = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+    $("weaponMult").value = String(mlt);
+  }
+
+  function refreshSkillSelect(){
+    const game = $("game").value;
+    const sel = $("skill");
+    const prev = sel.value;
+    clearOptions(sel, true);
+
+    (skillMap[game] || []).forEach(it => {
+      const op = document.createElement("option");
+      op.value = it.name;
+
+      let normal = Number.isFinite(it.mult) ? it.mult : 1;
+      let eff = Number.isFinite(it.multEff) ? it.multEff : normal;
+
+      // DBに特効倍率が無い場合の補完（DQ1 竜王斬り など）
+      if (Math.abs(eff - normal) < 1e-9){
+        if (game === "DQ1" && /竜王斬り/.test(it.name)){
+          eff = 3.5;
+        } else if (/(斬り|キラー|スレイヤー)/.test(it.name)){
+          // よくある「通常1.1 / 特効1.6」の補完
+          if (Math.abs(normal - 1.0) < 1e-9 || Math.abs(normal - 1.1) < 0.06 || Math.abs(normal - 1.6) < 0.06){
+            normal = 1.1;
+            eff = 1.6;
+          }
+        }
+      }
+
+      op.textContent = `${it.name}（通常${fmt(normal,3)} / 特効${fmt(eff,3)}）`;
+      op.dataset.mult = String(normal);
+      op.dataset.multEff = String(eff);
+      sel.appendChild(op);
+    });
+
+    if (prev && Array.from(sel.options).some(o => o.value === prev)){
+      sel.value = prev;
+    }
+
+    if (!sel.value) $("skillMult").value = "1";
+    updateSkillButtons();
+  }
+
+    function updateSkillButtons(){
+    const sel = $("skill");
+    const op = sel.options[sel.selectedIndex];
+
+    let normal = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+    let eff = safeNumber(op?.dataset?.multEff, normal);
+    if (eff === null) eff = normal;
+
+    // DBに「特効」が無い場合の補完（よくある 1.1 / 1.6）
+    // ※ normal/eff が同じで、かつ名前が「○○斬り」「○○キラー」系なら推定値を入れる
+    const name = String(op?.value ?? "");
+    const game = $("game").value;
+    if (Math.abs(eff - normal) < 1e-9 && game === "DQ1" && /竜王斬り/.test(name)){
+      eff = 3.5;
+    }
+    if (Math.abs(eff - normal) < 1e-9 && /(斬り|キラー|スレイヤー)/.test(name)){
+      if (Math.abs(normal - 1.0) < 1e-9 || Math.abs(normal - 1.1) < 0.06 || Math.abs(normal - 1.6) < 0.06){
+        normal = 1.1;
+        eff = 1.6;
+      }
+    }
+
+    const btnN = $("setSkillNormal");
+    const btnE = $("setSkillEffective");
+
+    btnN.textContent = `通常(${fmt(normal,3)})`;
+    btnE.textContent = `特効(${fmt(eff,3)})`;
+    btnE.disabled = false;
+
+    $("skillMult").value = String(skillEffMode ? eff : normal);
+  }
+
+
+  // ====== 運基準：自動判定 & 数値表示 ======
+  function decideLuckBand(game, luck, low, high){
+    if (!Number.isFinite(luck) || !Number.isFinite(low) || !Number.isFinite(high)) return null;
+    // 下限 >> 運 => 最小 / 下限<=運<=上限 => 中 / 上限<運 => 最大
+    if (luck < low) return "最小";
+    if (luck <= high) return "中";
+    return "最大";
+  }
+
+  function renderLuckBaseInfo(){
+    const el = $("luckBaseInfo");
+    if (!el) return;
+    const lv = safeNumber($("lv").value, null);
+    const luck = safeNumber($("luck").value, null);
+
+    if (!lastLuckInfo || lv === null){
+      el.textContent = "";
+      return;
+    }
+
+    const low = lastLuckInfo.low;
+    const high = lastLuckInfo.high;
+
+    // 3種類：下限 / 上限 / 現在
+    const parts = [];
+    if (Number.isFinite(low)) parts.push(`下限 ${Math.trunc(low)}`);
+    if (Number.isFinite(high)) parts.push(`上限 ${Math.trunc(high)}`);
+    if (Number.isFinite(luck)) parts.push(`運 ${Math.trunc(luck)}`);
+    el.textContent = parts.join(" / ");
+  }
+
+  async function updateLuckAuto(){
+    const bandSel = $("luckBand").value;
+    const chara = $("chara").value;
+    const lv = safeNumber($("lv").value, null);
+
+    lastLuckInfo = null;
+
+    if (!chara || lv === null){
+      renderLuckBaseInfo();
+      return;
+    }
+
+    const info = abilityIndex.get(`${chara}|${lv}`) || null;
+    if (!info){
+      renderLuckBaseInfo();
+      return;
+    }
+
+    const luckInput = $("luck");
+    if ((luckInput.value || "").trim() === "" && Number.isFinite(info.luck)){
+      luckInput.value = String(Math.trunc(info.luck));
+    }
+
+    const game = $("game").value;
+    const luck = safeNumber(luckInput.value, null);
+
+    const low = Number.isFinite(info.low) ? info.low : null;
+    const high = Number.isFinite(info.high) ? info.high : null;
+    const base = Number.isFinite(info.base) ? info.base : null;
+
+    const autoBand = decideLuckBand(game, luck, low, high);
+
+    lastLuckInfo = { low, high, base };
+
+    renderLuckBaseInfo();
+
+    if (bandSel === "auto" && autoBand){
+      $("luckBand").value = autoBand;
+    }
+  }
+
+  function getEffectiveLuckBand(){
+    const bandSel = $("luckBand").value;
+    if (bandSel !== "auto") return bandSel;
+    return lastLuckInfo?.band || "中"; // 情報が無い時は中
+  }
+
+  // ====== 計算 ======
+  function compute(stageOverride=null){
+    const game = $("game").value;
+    const mode = $("mode").value;
+    const A = safeNumber($("atk").value, null);
+    const D = safeNumber($("def").value, null);
+    if (A === null || D === null) return { error: "攻撃/防御" };
+
+    const base = baseDamage(game, A, D);
+    const modeMult = MODE_MULT[mode] ?? 1.0;
+
+    const band = getEffectiveLuckBand();
+    const luckMult = (LUCK_MULT[game]?.[band] ?? 1.0);
+
+    const skillMult = safeNumber($("skillMult").value, 1.0) ?? 1.0;
+    const weaponMult = safeNumber($("weaponMult").value, 1.0) ?? 1.0;
+    const manualMult = safeNumber($("manualMult").value, 1.0) ?? 1.0;
+
+    const bikilt = $("bikilt").checked ? 2.0 : 1.0;
+
+    const tame = $("tame").value;
+    const tameMult = (tame === "tame" || tame === "ouen") ? 2.0 : (tame === "super_tame") ? 3.0 : 1.0;
+
+    const hitCount = clampInt(safeNumber($("hitCount").value, 1) ?? 1, 1, 8);
+    const beast = safeNumber($("beastMode").value, 0) ? 2 : 1;
+    const totalHits = hitCount * beast;
+
+    const stage = stageOverride !== null ? stageOverride : safeNumber($("defStage").value, 0) ?? 0;
+    const defMult = stageMult(stage);
+
+    const totalMult = modeMult * luckMult * skillMult * weaponMult * bikilt * tameMult * manualMult * defMult;
+
+    const meanRaw = base * totalMult * totalHits;
+    const minRaw = base * totalMult * RAND_MIN * totalHits;
+    const maxRaw = base * totalMult * RAND_MAX * totalHits;
+
+    return {
+      game, mode, A, D,
+      enemy: $("enemy").value || "",
+      skill: $("skill").value || "",
+      weapon: $("weapon").value || "",
+      hits: totalHits,
+      band,
+      stage,
+      mult: totalMult,
+      mean: Math.max(0, floor0(meanRaw)),
+      min: Math.max(0, floor0(minRaw)),
+      max: Math.max(0, floor0(maxRaw)),
+    };
+  }
+
+  function setResultMain(text){
+    $("resultMain").textContent = text;
+  }
+
+  function renderResult(){
+    const unknown = $("stageUnknown").checked;
+
+    if (!unknown){
+      const r = compute();
+      if (r.error){ setResultMain("-"); return; }
+      setResultMain(`${r.mean}（${r.min}〜${r.max}）`);
+      return;
+    }
+
+    // 段階不明：↓1/3/6 と ↑1/3/6 を同時表示
+    const stages = [-1, -3, -6, 1, 3, 6];
+    const parts = [];
+    for (const s of stages){
+      const r = compute(s);
+      if (r.error) continue;
+      const tag = s < 0 ? `↓${Math.abs(s)}` : `↑${s}`;
+      parts.push(`${tag}:${r.mean}（${r.min}〜${r.max}）`);
+    }
+    setResultMain(parts.join(" / "));
+  }
+
+  // ====== ログ ======
+  const logs = [];
+
+  function addLog(){
+    const unknown = $("stageUnknown").checked;
+    if (!unknown){
+      const r = compute();
+      if (r.error) return;
+      logs.push(r);
+      renderLogs();
+      return;
+    }
+
+    // 段階不明：↓1/3/6 と ↑1/3/6 をログにまとめて入れる
+    const stages = [-1, -3, -6, 1, 3, 6];
+    for (const s of stages){
+      const r = compute(s);
+      if (r.error) continue;
+      const tag = s < 0 ? `防御↓${Math.abs(s)}` : `防御↑${s}`;
+      r.skill = (r.skill ? r.skill + " / " : "") + tag;
+      logs.push(r);
+    }
+    renderLogs();
+  }
+
+  function renderLogs(){
+    const tb = $("logTable").querySelector("tbody");
+    tb.innerHTML = "";
+    logs.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      const range = `${row.min}〜${row.max}`;
+      const cells = [
+        String(i+1),
+        row.game,
+        row.enemy,
+        String(row.A),
+        String(row.D),
+        row.band,
+        row.mode,
+        row.skill,
+        row.weapon,
+        String(row.hits || 1),
+        fmt(row.mult, 3),
+        String(row.mean),
+        range,
+      ];
+      for (const c of cells){
+        const td = document.createElement("td");
+        td.textContent = c;
+        tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    });
+  }
+
+  function downloadCsv(){
+    const headers = ["作品","敵","攻撃","防御","運基準","モード","技","武器","回数","倍率合計","平均","最小","最大"];
+    const rows = logs.map(r => [
+      r.game, r.enemy, r.A, r.D, r.band, r.mode, r.skill, r.weapon, (r.hits||1),
+      fmt(r.mult, 10), r.mean, r.min, r.max
+    ]);
+    const esc = (v) => {
+      const s = String(v ?? "");
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+      return s;
+    };
+    const csv = [headers, ...rows].map(r => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "damage_log.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ====== Bind ======
+  function bind(){
+    $("btnCalc").addEventListener("click", () => { addLog(); renderResult(); });
+    $("btnClear").addEventListener("click", () => { logs.length = 0; renderLogs(); renderResult(); });
+$("setSkillNormal").addEventListener("click", () => {
+      const sel = $("skill");
+      const op = sel.options[sel.selectedIndex];
+      const m = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+      skillEffMode = false;
+      $("skillMult").value = String(m);
+      updateSkillButtons();
+      renderResult();
+    });
+
+    $("setSkillEffective").addEventListener("click", () => {
+      const sel = $("skill");
+      const op = sel.options[sel.selectedIndex];
+      const eff = safeNumber(op?.dataset?.multEff, safeNumber(op?.dataset?.mult, 1.0) ?? 1.0) ?? 1.0;
+      skillEffMode = true;
+      $("skillMult").value = String(eff);
+      updateSkillButtons();
+      renderResult();
+    });
+
+    const ids = ["game","mode","enemy","atk","def","skill","skillMult","weapon","weaponMult","hitCount","beastMode","manualMult","bikilt","tame","defStage","stageUnknown","chara","lv","luck","luckBand"];
+    ids.forEach(id => {
+      $(id).addEventListener("change", async () => {
+        if (id === "enemy"){
+          const game = $("game").value;
+          const sel = $("enemy");
+          const op = sel.options[sel.selectedIndex];
+
+          // 未選択ならリセット
+          if (!op || !op.value){
+            $("hp").value = "";
+            renderResult();
+            return;
+          }
+
+          const d0 = safeNumber(op?.dataset?.def, null);
+          if (d0 !== null){
+            $("def").value = String(d0);
+          }
+          const h0 = safeNumber(op?.dataset?.hp, null);
+          if (h0 !== null){
+            $("hp").value = String(h0);
+          }
+        }
+        if (id === "skill"){
+          const sel = $("skill");
+          const op = sel.options[sel.selectedIndex];
+          const m = safeNumber(op?.dataset?.mult, null);
+          if (m !== null) $("skillMult").value = String(m);
+          else $("skillMult").value = "1";
+          updateSkillButtons();
+        }
+
+        if (id === "weapon"){
+          const sel = $("weapon");
+          const op = sel.options[sel.selectedIndex];
+          const m = safeNumber(op?.dataset?.mult, 1.0) ?? 1.0;
+          $("weaponMult").value = String(m);
+        }
+        if (id === "game"){
+          await bootGame($("game").value);
+        }
+        if (id === "chara" || id === "lv"){
+          await updateLuckAuto();
+        }
+        if (id === "luck"){
+          renderLuckBaseInfo();
+          // 自動バンドの再判定
+          if ($("luckBand").value === "auto"){
+            // lastLuckInfo に luck を反映させて band 更新
+            if (lastLuckInfo){
+              const game = $("game").value;
+              const luck = safeNumber($("luck").value, null);
+              lastLuckInfo.luck = luck;
+              lastLuckInfo.band = decideLuckBand(game, luck, lastLuckInfo.low, lastLuckInfo.high);
+            }
+          }
+        }
+        renderResult();
+      });
+      // inputでも即反映
+      $(id).addEventListener("input", () => {
+        if (id === "skillMult"){
+          const v = safeNumber($("skillMult").value, null);
+          if (v === null) $("skillMult").value = "1";
+        }
+        renderLuckBaseInfo();
+        renderResult();
+      });
+    });
+
+    // 初期値：倍率は1
+    if (($("skillMult").value || "").trim() === "") $("skillMult").value = "1";
+  }
+
+  async function bootGame(game){
+    try{
+      await loadEnemies(game);
+    }catch(e){}
+    try{
+      await loadSkills(game);
+    }catch(e){}
+    try{
+      await loadWeapons(game);
+    }catch(e){}
+    refreshEnemySelect();
+    refreshSkillSelect();
+    refreshWeaponSelect();
+    renderResult();
+  }
+
+  async function boot(){
+    initDefStageOptions();
+    try{ await loadAbility(); }catch(e){}
+    await bootGame($("game").value);
+    await updateLuckAuto();
+    bind();
+    renderResult();
+  }
+
+  // ====== Start ======
+  boot();
+})();
+</script>
+
+<style id="dqdc-debug-style">
+  .dqdc-debug-panel{
+    position:fixed;
+    right:12px;
+    bottom:12px;
+    width:min(520px, calc(100vw - 24px));
+    max-height:min(70vh, 640px);
+    overflow:auto;
+    background:rgba(20,20,24,0.96);
+    color:#f2f2f2;
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:12px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+    z-index:99999;
+    font-size:12px;
+    line-height:1.35;
+    display:none;
+  }
+  .dqdc-debug-panel.is-open{display:block;}
+  .dqdc-debug-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:10px 10px 8px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+    position:sticky;
+    top:0;
+    background:rgba(20,20,24,0.98);
+  }
+  .dqdc-debug-title{font-weight:700; font-size:12px; letter-spacing:0.02em;}
+  .dqdc-debug-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .dqdc-debug-btn{
+    appearance:none;
+    border:1px solid rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    border-radius:999px;
+    padding:5px 9px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .dqdc-debug-btn:hover{background:rgba(255,255,255,0.12);}
+  .dqdc-debug-body{padding:10px;}
+  .dqdc-debug-body pre{
+    margin:0;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  .dqdc-debug-hint{
+    opacity:0.85;
+    font-size:11px;
+  }
+</style>
+
+<div class="dqdc-debug-panel" id="dqdcDebugPanel" aria-hidden="true">
+  <div class="dqdc-debug-head">
+    <div>
+      <div class="dqdc-debug-title">DQ Damage Calc Debug（管理者用）</div>
+      <div class="dqdc-debug-hint">Ctrl+Shift+D で表示切替 / ?debug=1 でもON</div>
+    </div>
+    <div class="dqdc-debug-actions">
+      <button class="dqdc-debug-btn" id="dqdcDebugCopy">条件をコピー</button>
+      <button class="dqdc-debug-btn" id="dqdcDebugRefresh">更新</button>
+      <button class="dqdc-debug-btn" id="dqdcDebugClose">閉じる</button>
+    </div>
+  </div>
+  <div class="dqdc-debug-body">
+    <pre id="dqdcDebugText"></pre>
+  </div>
+</div>
+
+<script id="dqdc-debug-script">
+(function(){
+  const $ = (id) => document.getElementById(id);
+
+  function num(v){
+    const n = Number(String(v ?? '').trim());
+    return Number.isFinite(n) ? n : null;
+  }
+  function selText(id){
+    const el = $(id);
+    if(!el) return null;
+    if(el.tagName === 'SELECT'){
+      const opt = el.options[el.selectedIndex];
+      return opt ? opt.textContent : null;
+    }
+    return (el.value ?? null);
+  }
+  function getVal(id){
+    const el = $(id);
+    if(!el) return null;
+    return (el.value ?? '').toString();
+  }
+  function getChecked(id){
+    const el = $(id);
+    return !!(el && el.checked);
+  }
+  function getText(id){
+    const el = $(id);
+    return el ? (el.textContent ?? '').trim() : '';
+  }
+
+  function buildReportText(){
+    const game = getVal('game');
+    const mode = getVal('mode');
+    const enemy = selText('enemy');
+    const hp = num(getVal('hp'));
+    const def = num(getVal('def'));
+    const atk = num(getVal('atk'));
+    const chara = selText('chara');
+    const lv = getVal('lv');
+    const luck = getVal('luck');
+    const luckBand = getVal('luckBand');
+
+    const weapon = selText('weapon');
+    const weaponMult = num(getVal('weaponMult')) ?? 1;
+    const skill = selText('skill');
+    const skillMult = num(getVal('skillMult')) ?? 1;
+
+    const hitCount = num(getVal('hitCount')) ?? 1;
+    const beastMode = getVal('beastMode');
+    const beastN = (beastMode === 'on' || beastMode === '2') ? 2 : (num(beastMode) ?? 1);
+    const totalHits = hitCount * beastN;
+
+    const bikilt = getChecked('bikilt');
+    const tame = getVal('tame');
+    const manualMult = num(getVal('manualMult')) ?? 1;
+
+    const defStage = getVal('defStage');
+    const stageUnknown = getChecked('stageUnknown');
+
+    const resultMain = getText('resultMain');
+    const resultSub = getText('resultSub');
+    const resultBands = getText('resultBands');
+
+    // ざっくり倍率まとめ（運/モード等はページ側の計算に任せる。ここは参考表示）
+    const multApprox = weaponMult * skillMult * manualMult;
+
+    const lines = [];
+    lines.push('【入力】');
+    lines.push(`作品: ${game} / モード: ${mode}`);
+    lines.push(`敵: ${enemy ?? ''}`);
+    lines.push(`HP: ${hp ?? ''} / 防御: ${def ?? ''} / 攻撃: ${atk ?? ''}`);
+    if(chara && chara !== '（任意）') lines.push(`キャラ: ${chara} / LV: ${lv} / 運: ${luck}（判定: ${luckBand}）`);
+    lines.push(`武器: ${weapon ?? ''}（倍率: ${weaponMult}）`);
+    lines.push(`技: ${skill ?? ''}（倍率: ${skillMult}）`);
+    lines.push(`バイキルト: ${bikilt ? 'あり' : 'なし'} / ため: ${tame}`);
+    lines.push(`防御段階: ${defStage}${stageUnknown ? '（不明チェックON）' : ''}`);
+    lines.push(`回数: ヒット=${hitCount} × ビースト=${beastN} => 総ヒット=${totalHits}`);
+    lines.push(`手動倍率: ${manualMult}`);
+    lines.push(`参考：倍率ざっくり(武器×技×手動) = ${multApprox.toFixed(6)}`);
+    lines.push('');
+    lines.push('【出力（画面表示そのまま）】');
+    if(resultMain) lines.push(resultMain);
+    if(resultSub) lines.push(resultSub);
+    if(resultBands) lines.push(resultBands);
+    lines.push('');
+    lines.push('【チェック】');
+    const warns = [];
+    if((getVal('skillMult') ?? '').trim() === '') warns.push('技倍率が空欄（1扱い推奨）');
+    if((getVal('weaponMult') ?? '').trim() === '') warns.push('武器倍率が空欄（1扱い推奨）');
+    if((getVal('manualMult') ?? '').trim() === '') warns.push('手動倍率が空欄（1扱い推奨）');
+    const sm = num(getVal('skillMult'));
+    const wm = num(getVal('weaponMult'));
+    if(sm === 0) warns.push('技倍率が0（空欄運用なら0は入れない）');
+    if(wm === 0) warns.push('武器倍率が0（空欄運用なら0は入れない）');
+    lines.push(warns.length ? '・' + warns.join('\n・') : '問題なし（この欄は目安）');
+
+    return lines.join('\n');
+  }
+
+  function refreshDebug(){
+    const pre = $('dqdcDebugText');
+    if(!pre) return;
+    pre.textContent = buildReportText();
+  }
+
+  function setOpen(open){
+    const panel = $('dqdcDebugPanel');
+    if(!panel) return;
+    panel.classList.toggle('is-open', open);
+    panel.setAttribute('aria-hidden', String(!open));
+    try{ localStorage.setItem('dqdc_debug', open ? '1' : '0'); }catch(e){}
+    if(open) refreshDebug();
+  }
+
+  function isOpen(){
+    const panel = $('dqdcDebugPanel');
+    return !!(panel && panel.classList.contains('is-open'));
+  }
+
+  function init(){
+    const panel = $('dqdcDebugPanel');
+    if(!panel) return;
+
+    $('dqdcDebugClose')?.addEventListener('click', () => setOpen(false));
+    $('dqdcDebugRefresh')?.addEventListener('click', () => refreshDebug());
+    $('dqdcDebugCopy')?.addEventListener('click', async () => {
+      const text = buildReportText();
+      try{
+        await navigator.clipboard.writeText(text);
+        $('dqdcDebugCopy').textContent = 'コピーしました';
+        setTimeout(()=>{ $('dqdcDebugCopy').textContent = '条件をコピー'; }, 1200);
+      }catch(e){
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+    });
+
+    // hotkey
+    window.addEventListener('keydown', (e) => {
+      if(e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')){
+        e.preventDefault();
+        setOpen(!isOpen());
+      }
+    });
+
+    // auto open: query or localStorage
+    const qs = new URLSearchParams(location.search);
+    const qDebug = qs.get('debug');
+    let open = false;
+    if(qDebug === '1' || qDebug === 'true') open = true;
+    try{
+      if(localStorage.getItem('dqdc_debug') === '1') open = true;
+    }catch(e){}
+    setOpen(open);
+
+    // update when inputs change
+    const watchIds = ['game','mode','enemy','hp','def','chara','lv','luck','luckBand','atk','weapon','weaponMult','hitCount','beastMode','skill','skillMult','bikilt','tame','manualMult','defStage','stageUnknown'];
+    for(const id of watchIds){
+      const el = $(id);
+      if(!el) continue;
+      el.addEventListener('input', () => { if(isOpen()) refreshDebug(); });
+      el.addEventListener('change', () => { if(isOpen()) refreshDebug(); });
+    }
+
+    // observe results/log updates
+    const mo = new MutationObserver(() => { if(isOpen()) refreshDebug(); });
+    ['resultMain','resultSub','resultBands','logTable'].forEach(id => {
+      const el = $(id);
+      if(el) mo.observe(el, {subtree:true, childList:true, characterData:true});
+    });
+  }
+
+  // wait for page boot
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
