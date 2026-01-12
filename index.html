@@ -3,32 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <title>DQI・II HD-2D 攻略メモ＆データベース</title>
+  <meta name="description" content="ドラゴンクエストI・II HD-2Dリメイク版の非公式攻略メモ＆データベース。ストーリー攻略、ボス攻略、経験値・運基準などをまとめています。">
+  <meta name="description" content="ドラゴンクエストI・II HD-2D版の攻略メモとデータをまとめた非公式サイトです。">
+  <link rel="icon" href="./favicon.png" type="image/png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+　<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7687416670736373"
+  <meta name="msvalidate.01" content="933F1D0EA1FB507A9B4A3BD4F64255B5" />
+     crossorigin="anonymous"></script>
   <!-- 共通テーマ -->
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="boss_hp_sidebar.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7687416670736373
+<meta name="google-site-verification" content="18bkD956Gj3a_2GBjRWH7bKFoSrDXwbM0oE8xLWH1KE" />  
+     crossorigin="anonymous"></script>
+
+  <style>
+    /* トップページ：タイトルの隣にサイト内検索を配置 */
+    .index-title-row{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .index-title-row h1{ margin:0; }
+
+    .site-search-tool--header{
+      position:relative;
+      padding:0;
+      margin:0;
+      border:0;
+      background:transparent;
+      min-width:min(360px, 100%);
+    }
+    .site-search-tool--header h2{ display:none; }
+    .site-search-tool--header label{ display:none; }
+
+    .site-search-tool--header input[type="search"],
+    .site-search-tool--header input[type="text"]{
+      width:min(360px, 100%);
+    }
+
+    /* 検索結果を入力欄の下にドロップダウン表示 */
+    .site-search-tool--header .search-results{
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      z-index:999;
+      max-height:60vh;
+      overflow:auto;
+      background:#fff;
+      border:1px solid rgba(0,0,0,.15);
+    }
+
+    @media (max-width: 640px){
+      .site-search-tool--header{ width:100%; }
+      .site-search-tool--header input[type="search"],
+      .site-search-tool--header input[type="text"]{ width:100%; }
+    }
+  </style>
+
 </head>
 <body>
   <main class="index-main">
     <div class="index-main-left">
-  <div class="index-title-row">
-  <h1>DQI・II HD-2D 攻略メモ＆データベース</h1>
+    <div class="index-title-row">
+      <h1>DQI・II HD-2D 攻略メモ＆データベース</h1>
+            <section class="site-search-tool site-search-tool--header">
+              <h2>サイト内検索</h2>
 
-  <section class="site-search-tool site-search-tool--header">
-    <h2>サイト内検索</h2>
+              <div class="field">
+                <label for="site-search-input">キーワード：</label>
+                <input id="site-search-input" type="search" data-role="site-search-input"
+                       placeholder="例：ベホマ、りゅうおう、やくそう">
+              </div>
 
-    <div class="field">
-      <label for="site-search-input">キーワード：</label>
-      <input id="site-search-input" type="search" data-role="site-search-input"
-             placeholder="例：ベホマ、りゅうおう、やくそう">
+              <div class="search-results" data-role="site-search-results"></div>
+            </section>
+
     </div>
-
-    <div class="search-results" data-role="site-search-results"></div>
-  </section>
-</div>
-      
-    <div class="index-main-left-inner">
+<div class="index-main-left-inner">
       <div class="index-left-meta">
         <h2>基本</h2>
         <ul>
@@ -40,6 +94,7 @@
         <ul>
            <li><a href="memo.html">メモ・小ネタ</a></li>
           <li><a href="about.html">このサイトについて</a></li>
+          <p><a href="./privacy.html">プライバシーポリシー</a></p>
           <a href="./sitemap.html">サイトマップ</a>
         </ul>
 
@@ -87,31 +142,15 @@
             <li><a href="worldmap.html">世界地図（DQ1・DQ2）</a></li>
              <li><a href="boss_hp.html">ボスHP計算機（DQ1・DQ2）</a></li>
              <li><a href="dq_character.html">キャラクター情報（DQ1・DQ2）</a></li>
-            <li><a href="./dq_encounter_level.html">せいすい・トヘロス適正レベル一覧</a></li>
+             <li><a href="./dq_encounter_level.html">せいすい・トヘロス適正レベル一覧</a></li>
             <li><a href="./dq_items_calc.html">DQ1・DQ2 アイテム所持金計算機</a></li>
-              <li><a href="./dq_damage_calc.html">DQ1・DQ2 ダメージ計算</a></li>
+             <li><a href="./dq_damage_calc.html">DQ1・DQ2 ダメージ計算機</a></li>
           </ul>
         </section>
       </div>
     </div>
   </div>
-
-    <aside class="index-main-right">
-
-      <section class="site-search-tool">
-        <h2>サイト内検索</h2>
-
-        <div class="field">
-          <label for="site-search-input">キーワード：</label>
-          <input id="site-search-input" type="search" data-role="site-search-input"
-                 placeholder="例：ベホマ、りゅうおう、やくそう">
-        </div>
-
-        <div class="search-results" data-role="site-search-results"></div>
-      </section>
-    </aside>
-
-  </main>
+</main>
   <script src="site_search.js"></script>
 </body>
 </html>
