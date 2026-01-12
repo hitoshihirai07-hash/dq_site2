@@ -16,73 +16,13 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7687416670736373
 <meta name="google-site-verification" content="18bkD956Gj3a_2GBjRWH7bKFoSrDXwbM0oE8xLWH1KE" />  
      crossorigin="anonymous"></script>
-
-  <style>
-    /* トップページ：タイトルの隣にサイト内検索を配置 */
-    .index-title-row{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .index-title-row h1{ margin:0; }
-
-    .site-search-tool--header{
-      position:relative;
-      padding:0;
-      margin:0;
-      border:0;
-      background:transparent;
-      min-width:min(360px, 100%);
-    }
-    .site-search-tool--header h2{ display:none; }
-    .site-search-tool--header label{ display:none; }
-
-    .site-search-tool--header input[type="search"],
-    .site-search-tool--header input[type="text"]{
-      width:min(360px, 100%);
-    }
-
-    /* 検索結果を入力欄の下にドロップダウン表示 */
-    .site-search-tool--header .search-results{
-      position:absolute;
-      top:100%;
-      left:0;
-      right:0;
-      z-index:999;
-      max-height:60vh;
-      overflow:auto;
-      background:#fff;
-      border:1px solid rgba(0,0,0,.15);
-    }
-
-    @media (max-width: 640px){
-      .site-search-tool--header{ width:100%; }
-      .site-search-tool--header input[type="search"],
-      .site-search-tool--header input[type="text"]{ width:100%; }
-    }
-  </style>
-
 </head>
 <body>
   <main class="index-main">
     <div class="index-main-left">
-    <div class="index-title-row">
-      <h1>DQI・II HD-2D 攻略メモ＆データベース</h1>
-            <section class="site-search-tool site-search-tool--header">
-              <h2>サイト内検索</h2>
+    <h1>DQI・II HD-2D 攻略メモ＆データベース</h1>
 
-              <div class="field">
-                <label for="site-search-input">キーワード：</label>
-                <input id="site-search-input" type="search" data-role="site-search-input"
-                       placeholder="例：ベホマ、りゅうおう、やくそう">
-              </div>
-
-              <div class="search-results" data-role="site-search-results"></div>
-            </section>
-
-    </div>
-<div class="index-main-left-inner">
+    <div class="index-main-left-inner">
       <div class="index-left-meta">
         <h2>基本</h2>
         <ul>
@@ -150,7 +90,23 @@
       </div>
     </div>
   </div>
-</main>
+
+    <aside class="index-main-right">
+
+      <section class="site-search-tool">
+        <h2>サイト内検索</h2>
+
+        <div class="field">
+          <label for="site-search-input">キーワード：</label>
+          <input id="site-search-input" type="search" data-role="site-search-input"
+                 placeholder="例：ベホマ、りゅうおう、やくそう">
+        </div>
+
+        <div class="search-results" data-role="site-search-results"></div>
+      </section>
+    </aside>
+
+  </main>
   <script src="site_search.js"></script>
 </body>
 </html>
