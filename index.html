@@ -13,6 +13,16 @@
   <!-- 共通テーマ -->
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="boss_hp_sidebar.css">
+
+  <style>
+    /* スマホ時：タイトル直下の検索を少しだけ見やすく */
+    @media (max-width: 900px){
+      #site-search-mobile-slot .site-search-tool{
+        margin-top: 10px;
+      }
+    }
+  </style>
+
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7687416670736373
 <meta name="google-site-verification" content="18bkD956Gj3a_2GBjRWH7bKFoSrDXwbM0oE8xLWH1KE" />  
      crossorigin="anonymous"></script>
@@ -21,6 +31,9 @@
   <main class="index-main">
     <div class="index-main-left">
     <h1>DQI・II HD-2D 攻略メモ＆データベース</h1>
+
+    <div id="site-search-mobile-slot"></div>
+
 
     <div class="index-main-left-inner">
       <div class="index-left-meta">
@@ -93,6 +106,8 @@
 
     <aside class="index-main-right">
 
+
+      <div id="site-search-desktop-slot">
       <section class="site-search-tool">
         <h2>サイト内検索</h2>
 
@@ -104,9 +119,34 @@
 
         <div class="search-results" data-role="site-search-results"></div>
       </section>
+      </div>
     </aside>
 
   </main>
+
+  <script>
+    (function () {
+      var mql = window.matchMedia('(max-width: 900px)');
+      var tool = document.querySelector('.site-search-tool');
+      var mobileSlot = document.getElementById('site-search-mobile-slot');
+      var desktopSlot = document.getElementById('site-search-desktop-slot');
+      if (!tool || !mobileSlot || !desktopSlot) return;
+
+      function move() {
+        if (mql.matches) {
+          mobileSlot.appendChild(tool);
+        } else {
+          desktopSlot.appendChild(tool);
+        }
+      }
+
+      move();
+
+      if (mql.addEventListener) mql.addEventListener('change', move);
+      else if (mql.addListener) mql.addListener(move);
+    })();
+  </script>
+
   <script src="site_search.js"></script>
 </body>
 </html>
