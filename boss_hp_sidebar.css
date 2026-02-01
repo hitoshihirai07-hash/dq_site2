@@ -220,3 +220,80 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* === quickHub: 迷ったらここ（押すだけ） === */
+.quickHub{
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--bg-main);
+}
+.quickHubTitle{
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+.quickHubGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.quickHubCard{
+  padding: 10px;
+  border: 1px solid #e6e0cf;
+  border-radius: 12px;
+  background: #fff;
+}
+.quickHubGame{
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.quickHubBtns{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.qhBtn, .qhSubBtn{
+  display: inline-block;
+  text-decoration: none;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 8px 12px;
+  line-height: 1;
+  font-size: 15px;
+  background: #fff;
+  color: var(--accent);
+}
+.qhBtn:hover, .qhSubBtn:hover{
+  background: var(--accent-soft);
+}
+.qhDetails{ display: inline-block; }
+.qhSummary{ list-style: none; cursor: pointer; user-select: none; }
+.qhSummary::-webkit-details-marker{ display: none; }
+.qhSubBtns{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.quickHubCommon{
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #efe7d7;
+}
+.quickHubCommonTitle{
+  font-size: .95rem;
+  margin: 0 0 8px;
+  color: var(--text-sub);
+}
+.quickHubCommonBtns{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 720px){
+  .quickHubGrid{ grid-template-columns: 1fr; }
+}
+
