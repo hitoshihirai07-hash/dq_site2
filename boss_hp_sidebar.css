@@ -222,78 +222,93 @@
 }
 
 
-/* === quickHub: 迷ったらここ（押すだけ） === */
-.quickHub{
-  margin: 14px 0 18px;
-  padding: 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--bg-main);
-}
-.quickHubTitle{
-  margin: 0 0 10px;
-  font-size: 1.05rem;
-}
-.quickHubGrid{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.quickHubCard{
-  padding: 10px;
-  border: 1px solid #e6e0cf;
-  border-radius: 12px;
-  background: #fff;
-}
-.quickHubGame{
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-.quickHubBtns{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.qhBtn, .qhSubBtn{
-  display: inline-block;
-  text-decoration: none;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 8px 12px;
-  line-height: 1;
-  font-size: 15px;
-  background: #fff;
-  color: var(--accent);
-}
-.qhBtn:hover, .qhSubBtn:hover{
-  background: var(--accent-soft);
-}
-.qhDetails{ display: inline-block; }
-.qhSummary{ list-style: none; cursor: pointer; user-select: none; }
-.qhSummary::-webkit-details-marker{ display: none; }
-.qhSubBtns{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-.quickHubCommon{
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #efe7d7;
-}
-.quickHubCommonTitle{
-  font-size: .95rem;
-  margin: 0 0 8px;
-  color: var(--text-sub);
-}
-.quickHubCommonBtns{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-@media (max-width: 720px){
-  .quickHubGrid{ grid-template-columns: 1fr; }
+/* ===== トップ：迷ったらここ（ボタン方式） ===== */
+.idx-shortcuts{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin: 8px 0 10px;
 }
 
+.idx-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--accent-soft);
+  color: var(--text-main);
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.idx-btn:hover{
+  text-decoration:none;
+  filter: brightness(0.98);
+}
+
+.idx-btn:active{
+  transform: translateY(1px);
+}
+
+.idx-btn-sub{
+  background: rgba(255,255,255,0.7);
+}
+
+.idx-dd{
+  display:inline-block;
+}
+
+.idx-dd > summary{
+  list-style: none;
+}
+
+.idx-dd > summary::-webkit-details-marker{
+  display:none;
+}
+
+.idx-dd-panel{
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.7);
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.idx-dd-panel a{
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.idx-dd-panel a:hover{
+  text-decoration: underline;
+}
+
+.idx-pages{
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(196,184,156,0.5);
+}
+
+.idx-pages > summary{
+  cursor: pointer;
+  color: var(--text-sub);
+  font-size: 0.88rem;
+}
+
+.idx-pages ul{
+  margin: 6px 0 0;
+}
+
+/* 画面が狭いときに、詳細パネルがはみ出しにくいようにする */
+@media (max-width: 520px){
+  .idx-dd-panel{ min-width: 0; width: 100%; }
+}
