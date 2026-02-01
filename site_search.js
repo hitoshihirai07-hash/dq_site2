@@ -42,6 +42,12 @@ const SITE_SEARCH_PAGES = [
     keywords: "世界地図 マップ DQ1 DQ2 位置 関係"
   },
 
+  {
+    title: "ドロップ逆引き（アイテム→落とす敵）",
+    url: "dq_drop_search.html",
+    keywords: "ドロップ 逆引き アイテム モンスター 落とす 落ちる 入手"
+  },
+
   // DQ1
   {
     title: "DQI ストーリー攻略",
@@ -167,12 +173,12 @@ const ITEM_SOURCES = [
   },
   {
     label: "DQII メダル入手場所",
-    csvPath: "dq2_medal.csv",
+    csvPath: "medal - dq2_medal.csv",
     url: "dq2_medal.html"
   },
   {
     label: "DQII メダル景品",
-    csvPath: "dq2_prize.csv",
+    csvPath: "medal - dq2_prize.csv",
     url: "dq2_medal.html"
   },
   {
@@ -180,57 +186,7 @@ const ITEM_SOURCES = [
     csvPath: "data/dq2_monsters.csv",
     url: "dq2_db.html"
   }
-,
-// ボス（CSV：ボス戦名でヒットさせる）
-{
-  label: "DQI ボス",
-  csvPath: "dq1_boss_multiunit.csv",
-  url: "dq1_boss_list.html"
-},
-{
-  label: "DQII ボス",
-  csvPath: "dq2_boss_multiunit.csv",
-  url: "dq2_boss_list.html"
-}
 ];
-
-// ---------------------
-// HTML全文インデックス（search_index.json）
-// ---------------------
-// 生成された search_index.json を読み込んで、HTML本文の検索を可能にします。
-// ※ search_index.json は GitHub Actions で自動生成する想定（tools/build_search_index.py）
-let PAGE_INDEX = [];
-let PAGE_INDEX_LOADED = false;
-
-function loadPageIndex() {
-  if (PAGE_INDEX_LOADED) return;
-  PAGE_INDEX_LOADED = true;
-
-  fetch("search_index.json")
-    .then(res => {
-      if (!res.ok) {
-        console.warn("page search: search_index.json 読み込み失敗");
-        return null;
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (!Array.isArray(data)) return;
-      PAGE_INDEX = data.map(p => {
-        const title = (p.title || p.url || "").toString();
-        const url = (p.url || "").toString();
-        const text = (p.text || "").toString();
-        return {
-          title,
-          url,
-          _hayLower: (title + " " + text).toLowerCase()
-        };
-      });
-    })
-    .catch(err => {
-      console.warn("page search: search_index.json 読み込み中にエラー:", err);
-    });
-}
 
 // CSV の 1 行ごとをまとめたインデックス
 let ITEM_INDEX = [];
@@ -320,16 +276,13 @@ function initSiteSearch() {
       return;
     }
 
-    // 1) ページ単位のヒット（優先：search_index.json / fallback：手動リスト）
-const pageList = (PAGE_INDEX && PAGE_INDEX.length) ? PAGE_INDEX : SITE_SEARCH_PAGES;
+    // 1) ページ単位のヒット
+    const pageHits = SITE_SEARCH_PAGES.filter(p => {
+      const hay = (p.title + " " + (p.keywords || "")).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    }).slice(0, 30);
 
-const pageHits = pageList.filter(p => {
-  // search_index.json 由来は _hayLower を持つ。手動リストは title+keywords で検索。
-  const hay = p._hayLower || ((p.title + " " + (p.keywords || "")).toLowerCase());
-  return hay.indexOf(q) !== -1;
-}).slice(0, 30);
-
-// 2) アイテム・場所など、CSV 内のヒット
+    // 2) アイテム・場所など、CSV 内のヒット
     const itemHits = ITEM_INDEX.filter(entry => entry.textLower.indexOf(q) !== -1).slice(0, 50);
 
     if (!pageHits.length && !itemHits.length) {
@@ -378,6 +331,5 @@ const pageHits = pageList.filter(p => {
 // DOMContentLoaded で初期化＆アイテムインデックス読み込み
 document.addEventListener("DOMContentLoaded", function () {
   initSiteSearch();
-  loadPageIndex();
   loadItemIndex();
 });
